@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Kivo</title>
+    <link rel="stylesheet" href="styles/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="dashboard-wrapper">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-logo">Kivo</h1>
+            </div>
+
+            <nav class="sidebar-nav">
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="btn-new-roadmap">+ New Roadmap</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h2 class="page-title">Your Roadmaps</h2>
+                    <p id="page-subtitle"></p>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+
+                <!-- Roadmaps Grid -->
+                <div class="roadmaps-grid">
+                    <!-- Empty - populated by JavaScript -->
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Create Roadmap Modal -->
+        <div id="create-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Create New Roadmap</h3>
+                    <button id="close-modal" class="btn-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="roadmap-name">Name</label>
+                        <input type="text" id="roadmap-name" placeholder="e.g., Website Redesign" />
+                    </div>
+                    <div class="form-group">
+                        <label for="roadmap-description">Description</label>
+                        <textarea id="roadmap-description" rows="4" placeholder="What's this roadmap about?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-btn" class="btn-cancel">Cancel</button>
+                    <button id="create-btn" class="btn-create">Create Roadmap</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="delete-modal" class="modal">
+            <div class="modal-content modal-small">
+                <div class="modal-header">
+                    <h3>Delete Roadmap?</h3>
+                    <button id="close-delete-modal" class="btn-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <p class="delete-warning">Are you sure you want to delete this roadmap? This action cannot be
+                        undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-delete-btn" class="btn-cancel">Cancel</button>
+                    <button id="confirm-delete-btn" class="btn-delete">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rename Modal-->
+        <div id="rename-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Rename modal</h3>
+                    <button id="close-rename-modal" class="btn-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="rename-roadmap-name">Name</label>
+                        <input type="text" id="rename-roadmap-name" placeholder="e.g., Website Redesign" />
+                    </div>
+                    <div class="form-group">
+                        <label for="rename-roadmap-description">Description</label>
+                        <textarea id="rename-roadmap-description" rows="4"
+                            placeholder="What's this roadmap about?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-rename-btn" class="btn-cancel">Cancel</button>
+                    <button id="rename-btn" class="btn-create">Save edits</button>
+                </div>
+            </div>
+        </div>
+
+        <script type="module" src="scripts/app.js"></script>
+</body>
+
+</html>
