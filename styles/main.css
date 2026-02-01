@@ -1,3 +1,4 @@
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -237,3 +238,244 @@ body {
         font-size: 1rem;
     }
 }
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #f8fafc;
+    margin: 0;
+    overflow-x: hidden;
+    background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+/* Header */
+.header {
+    padding: 2rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -0.03em;
+}
+
+.btn-header {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.7rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.btn-header:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Hero */
+.hero {
+    padding: 8rem 0 6rem;
+    text-align: center;
+}
+
+.hero h1 {
+    font-size: 4.5rem;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+    color: #ffffff;
+    margin-bottom: 1.8rem;
+}
+
+.hero p {
+    font-size: 1.3rem;
+    color: rgba(255, 255, 255, 0.8);
+    max-width: 700px;
+    margin: 0 auto 3rem;
+    line-height: 1.7;
+}
+
+.btn-primary {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    padding: 1.2rem 3rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1.15rem;
+    text-decoration: none;
+    transition: all 0.2s;
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(59, 130, 246, 0.4);
+}
+
+/* What Section */
+.what {
+    padding: 6rem 0;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.what h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 4rem;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2.5rem;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    transition: all 0.3s;
+}
+
+.card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateY(-5px);
+}
+
+.card h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+    color: #ffffff;
+}
+
+.card p {
+    font-size: 1.05rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.7;
+}
+
+/* Honest Section */
+.honest {
+    padding: 6rem 0;
+}
+
+.honest-box {
+    max-width: 750px;
+    margin: 0 auto;
+    text-align: center;
+    background: rgba(59, 130, 246, 0.1);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    border-radius: 20px;
+    padding: 4rem 3rem;
+}
+
+.honest-box h2 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+}
+
+.honest-box p {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.8;
+    margin-bottom: 2.5rem;
+}
+
+.btn-secondary {
+    display: inline-block;
+    background: transparent;
+    border: 2px solid #3b82f6;
+    color: #60a5fa;
+    padding: 1rem 2.5rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #3b82f6;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Footer */
+.footer {
+    padding: 3rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.footer p {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.95rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .hero h1 {
+        font-size: 3rem;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .honest-box {
+        padding: 3rem 2rem;
+    }
+
+    .honest-box h2 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .hero h1 {
+        font-size: 2.2rem;
+    }
+
+    .hero p {
+        font-size: 1rem;
+    }
+}
+
