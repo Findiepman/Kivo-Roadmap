@@ -1,5 +1,5 @@
-/* Login / register page — reuses the app's dark theme (Inter font + gradient
-   come from main.css). This file only adds new auth-specific elements. */
+/* Login / register page — uses the shared theme tokens. Overrides main.css's
+   landing-page background so the auth screen matches the app's dark palette. */
 
 .auth-body {
     min-height: 100vh;
@@ -7,15 +7,18 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
+    background: var(--bg);
+    background-image:
+        radial-gradient(60rem 40rem at 50% -10%, rgba(59, 130, 246, 0.12), transparent 60%);
 }
 
 .auth-card {
     width: 100%;
     max-width: 420px;
-    background: #1e293b;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    background: var(--panel-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
     padding: 2.5rem 2rem;
 }
 
@@ -39,28 +42,29 @@
 
 .auth-subtitle {
     font-size: 0.95rem;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-muted);
     text-align: center;
     margin-bottom: 2rem;
 }
 
 .auth-form .form-group {
     margin-bottom: 1.25rem;
+    position: relative;
 }
 
 .auth-form .form-group label {
     display: block;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--text-muted);
     margin-bottom: 0.5rem;
 }
 
 .auth-form .form-group input {
     width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
     padding: 0.85rem 1rem;
     color: #ffffff;
     font-size: 0.95rem;
@@ -69,12 +73,12 @@
 }
 
 .auth-form .form-group input::placeholder {
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-dim);
 }
 
 .auth-form .form-group input:focus {
     outline: none;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.07);
     border-color: rgba(59, 130, 246, 0.5);
 }
 
@@ -83,6 +87,25 @@
     margin-top: 0.5rem;
     padding: 0.9rem;
     font-size: 1rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border: none;
+    color: white;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+}
+
+.auth-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.auth-submit:disabled {
+    opacity: 0.6;
+    cursor: default;
+    transform: none;
 }
 
 .auth-error {
@@ -96,7 +119,7 @@
     text-align: center;
     margin-top: 1.5rem;
     font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-muted);
 }
 
 .auth-link {

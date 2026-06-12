@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Roadmap - Kivo</title>
+    <link rel="stylesheet" href="styles/theme.css">
     <link rel="stylesheet" href="styles/roadmap.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,28 +45,48 @@
 
             <div class="board-container" id="board-container">
 
-                <div class="board-column" data-column="todo">
+                <div class="board-column" data-column="planned">
                     <div class="column-header">
-                        <h3 class="column-title">To Do</h3>
+                        <div class="column-heading">
+                            <span class="column-dot"></span>
+                            <h3 class="column-title">Planned</h3>
+                        </div>
                         <span class="column-count">0</span>
                     </div>
-                    <div class="tasks-list" id="tasks-todo"></div>
+                    <div class="tasks-list" id="tasks-planned"></div>
                 </div>
 
-                <div class="board-column" data-column="doing">
+                <div class="board-column" data-column="in_progress">
                     <div class="column-header">
-                        <h3 class="column-title">Doing</h3>
+                        <div class="column-heading">
+                            <span class="column-dot"></span>
+                            <h3 class="column-title">In Progress</h3>
+                        </div>
                         <span class="column-count">0</span>
                     </div>
-                    <div class="tasks-list" id="tasks-doing"></div>
+                    <div class="tasks-list" id="tasks-in_progress"></div>
                 </div>
 
-                <div class="board-column" data-column="done">
+                <div class="board-column" data-column="testing">
                     <div class="column-header">
-                        <h3 class="column-title">Done</h3>
+                        <div class="column-heading">
+                            <span class="column-dot"></span>
+                            <h3 class="column-title">Testing</h3>
+                        </div>
                         <span class="column-count">0</span>
                     </div>
-                    <div class="tasks-list" id="tasks-done"></div>
+                    <div class="tasks-list" id="tasks-testing"></div>
+                </div>
+
+                <div class="board-column" data-column="released">
+                    <div class="column-header">
+                        <div class="column-heading">
+                            <span class="column-dot"></span>
+                            <h3 class="column-title">Released</h3>
+                        </div>
+                        <span class="column-count">0</span>
+                    </div>
+                    <div class="tasks-list" id="tasks-released"></div>
                 </div>
 
             </div>

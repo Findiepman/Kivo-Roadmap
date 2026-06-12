@@ -8,7 +8,7 @@ const router = express.Router({ mergeParams: true });
 
 router.use(auth);
 
-const COLUMNS = ['todo', 'doing', 'done'];
+const COLUMNS = ['planned', 'in_progress', 'testing', 'released'];
 
 // Serialize a DB row into the API shape, parsing tags from JSON.
 function serializeTask(row) {
@@ -71,7 +71,7 @@ router.post('/', (req, res) => {
   if (!title || typeof title !== 'string' || !title.trim()) {
     return res.status(400).json({ error: 'Task title is required' });
   }
-  const col = COLUMNS.includes(column) ? column : 'todo';
+  const col = COLUMNS.includes(column) ? column : 'planned';
 
   // New task goes to the bottom of its column.
   const maxRow = db

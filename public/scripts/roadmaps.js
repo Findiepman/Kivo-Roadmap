@@ -1,6 +1,14 @@
 import { state } from "./state.js";
-import { tasksToColumns } from "./storage.js";
+import { tasksToColumns, tagColorClass, COLUMN_KEYS } from "./storage.js";
 import { api } from "./api.js";
+
+// "Economy, Mining" -> ["Economy", "Mining"]
+function parseTags(value) {
+    return String(value || "")
+        .split(",")
+        .map(t => t.trim())
+        .filter(Boolean);
+}
 
 // ===== DOM ELEMENTEN =====
 const roadMapTitle = document.getElementById("roadmap-title"); // titel van de roadmap
@@ -10,6 +18,7 @@ const createTaskBtn = document.getElementById("create-task-btn"); // aanmaken kn
 const closeTaskModal = document.getElementById("close-task-modal"); // sluit knop modal
 const taskName = document.getElementById("task-name"); // input taak naam
 const taskDesc = document.getElementById("task-desc"); // input taak beschrijving
+const taskTags = document.getElementById("task-tags"); // input taak tags (comma separated)
 const customSelect = document.getElementById("task-column"); // select dropdown
 const selected = customSelect.querySelector(".selected"); // geselecteerde value
 const deleteTaskModal = document.getElementById("delete-task-modal"); // delete task modal
@@ -21,6 +30,7 @@ const confirmDeleteTaskBtn = document.getElementById("confirm-delete-task-btn");
 const renameModal = document.getElementById("rename-modal");
 const renameName = document.getElementById("rename-roadmap-name");
 const renameDesc = document.getElementById("rename-roadmap-description");
+const renameTags = document.getElementById("rename-task-tags");
 const renameBtn = document.getElementById("rename-btn");
 const cancelRenameBtn = document.getElementById("cancel-rename-btn");
 const closeRenameBtn = document.getElementById("close-rename-modal");
@@ -29,7 +39,7 @@ const closeRenameBtn = document.getElementById("close-rename-modal");
 let taskToDeleteId = null; // taak id voor delete
 let taskToDeleteColumn = null; // kolom van taak voor delete
 let roadmap = null; // huidige roadmap
-let selectedValue = "todo"; // default column
+let selectedValue = "planned"; // default column
 let taskToRenameId = null;
 let taskToRenameColumn = null;
 const options = customSelect.querySelectorAll(".options li"); // dropdown opties
@@ -133,16 +143,16 @@ async function reloadTasks() {
 }
 
 // ===== CREATE TASK =====
-async function createTask(column, text, title) {
+async function createTask(column, text, title, tags) {
     if (!roadmap || !canEdit()) return;
-    if (!["todo", "doing", "done"].includes(column)) return; // check column
+    if (!COLUMN_KEYS.includes(column)) return; // check column
     if (!title || !title.trim()) return;
 
     await api.createTask(roadmap.id, {
         title: title.trim(),
         description: text || "",
         column,
-        tags: []
+        tags: Array.isArray(tags) ? tags : []
     });
 
     await reloadTasks();
@@ -201,7 +211,6 @@ function renderTasks() {
             taskCard.className = "task-card";
             if (editable) taskCard.setAttribute("draggable", "true");
             taskCard.dataset.id = task.id;
-            if (columnName === "done") taskCard.classList.add("done");
 
             const title = document.createElement("div");
             title.className = "task-title";
@@ -218,7 +227,7 @@ function renderTasks() {
                 tagsWrap.className = "task-tags";
                 task.tags.forEach(tag => {
                     const pill = document.createElement("span");
-                    pill.className = "task-tag";
+                    pill.className = "task-tag " + tagColorClass(tag);
                     pill.textContent = tag;
                     tagsWrap.appendChild(pill);
                 });
@@ -346,6 +355,7 @@ function openRenameTaskModal(taskId, columnName) {
     renameModal.style.display = "flex"; // modal openen
     renameName.value = task.title;       // zet huidige naam
     renameDesc.value = task.text;        // zet huidige beschrijving
+    if (renameTags) renameTags.value = (task.tags || []).join(", "); // huidige tags
 }
 
 // Rename task
@@ -362,7 +372,8 @@ async function renameTask() {
 
     await api.updateTask(roadmap.id, taskToRenameId, {
         title: newTitle,
-        description: newText
+        description: newText,
+        tags: parseTags(renameTags ? renameTags.value : "")
     });
 
     // reset modal state
@@ -392,7 +403,7 @@ function dragEnd(e) {
 // Bouw de reorder-payload op uit de huidige kolom-volgorde.
 function buildReorderPayload() {
     const payload = [];
-    ["todo", "doing", "done"].forEach(col => {
+    COLUMN_KEYS.forEach(col => {
         roadmap.columns[col].forEach((t, index) => {
             payload.push({ id: t.id, column: col, position: index });
         });
@@ -437,10 +448,11 @@ async function moveTask(taskId, newColumn) {
 
 // ===== BUTTON EVENTS =====
 createTaskBtn.addEventListener("click", () => {
-    createTask(selectedValue, taskDesc.value, taskName.value);
+    createTask(selectedValue, taskDesc.value, taskName.value, parseTags(taskTags ? taskTags.value : ""));
     taskModal.style.display = "none"; // sluit modal
     taskDesc.value = "";
     taskName.value = "";
+    if (taskTags) taskTags.value = "";
 });
 
 cancelTaskBtn.addEventListener("click", () => {

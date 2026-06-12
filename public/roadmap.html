@@ -5,10 +5,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Edit Roadmap - Kivo</title>
+    <link rel="stylesheet" href="styles/theme.css">
     <link rel="stylesheet" href="styles/roadmap.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-lion-32.png">
 </head>
 
 <body>
@@ -44,40 +46,56 @@
 
             <div class="board-container">
 
-                <!-- To Do Column -->
-                <div class="board-column" data-column="todo">
+                <!-- Planned Column -->
+                <div class="board-column" data-column="planned">
                     <div class="column-header">
-                        <h3 class="column-title">To Do</h3>
+                        <div class="column-heading">
+                            <span class="column-dot"></span>
+                            <h3 class="column-title">Planned</h3>
+                        </div>
                         <span class="column-count">0</span>
                     </div>
-                    <button class="btn-add-task" data-column="todo">+ Add Task</button>
-                    <div class="tasks-list" id="tasks-todo">
-                        <!-- Task cards komen hier -->
-                    </div>
+                    <button class="btn-add-task" data-column="planned">+ Add Task</button>
+                    <div class="tasks-list" id="tasks-planned"></div>
                 </div>
 
-                <!-- Doing Column -->
-                <div class="board-column" data-column="doing">
+                <!-- In Progress Column -->
+                <div class="board-column" data-column="in_progress">
                     <div class="column-header">
-                        <h3 class="column-title">Doing</h3>
+                        <div class="column-heading">
+                            <span class="column-dot"></span>
+                            <h3 class="column-title">In Progress</h3>
+                        </div>
                         <span class="column-count">0</span>
                     </div>
-                    <button class="btn-add-task" data-column="doing">+ Add Task</button>
-                    <div class="tasks-list" id="tasks-doing">
-                        <!-- Task cards komen hier -->
-                    </div>
+                    <button class="btn-add-task" data-column="in_progress">+ Add Task</button>
+                    <div class="tasks-list" id="tasks-in_progress"></div>
                 </div>
 
-                <!-- Done Column -->
-                <div class="board-column" data-column="done">
+                <!-- Testing Column -->
+                <div class="board-column" data-column="testing">
                     <div class="column-header">
-                        <h3 class="column-title">Done</h3>
+                        <div class="column-heading">
+                            <span class="column-dot"></span>
+                            <h3 class="column-title">Testing</h3>
+                        </div>
                         <span class="column-count">0</span>
                     </div>
-                    <button class="btn-add-task" data-column="done">+ Add Task</button>
-                    <div class="tasks-list" id="tasks-done">
-                        <!-- Task cards komen hier -->
+                    <button class="btn-add-task" data-column="testing">+ Add Task</button>
+                    <div class="tasks-list" id="tasks-testing"></div>
+                </div>
+
+                <!-- Released Column -->
+                <div class="board-column" data-column="released">
+                    <div class="column-header">
+                        <div class="column-heading">
+                            <span class="column-dot"></span>
+                            <h3 class="column-title">Released</h3>
+                        </div>
+                        <span class="column-count">0</span>
                     </div>
+                    <button class="btn-add-task" data-column="released">+ Add Task</button>
+                    <div class="tasks-list" id="tasks-released"></div>
                 </div>
 
             </div>
@@ -98,19 +116,23 @@
                     <label for="task-name">Task Name</label>
                     <input type="text" id="task-name" placeholder="e.g., Design Landing Page" />
                 </div>
-                <!-- New: Task Description -->
                 <div class="form-group">
                     <label for="task-desc">Description</label>
                     <textarea id="task-desc" rows="3" placeholder="Describe this task..."></textarea>
                 </div>
                 <div class="form-group">
+                    <label for="task-tags">Tags</label>
+                    <input type="text" id="task-tags" placeholder="comma separated, e.g. Economy, Mining" />
+                </div>
+                <div class="form-group">
                     <label for="task-column">Column</label>
                     <div class="custom-select" id="task-column">
-                        <div class="selected">To Do</div>
+                        <div class="selected">Planned</div>
                         <ul class="options">
-                            <li data-value="todo">To Do</li>
-                            <li data-value="doing">Doing</li>
-                            <li data-value="done">Done</li>
+                            <li data-value="planned">Planned</li>
+                            <li data-value="in_progress">In Progress</li>
+                            <li data-value="testing">Testing</li>
+                            <li data-value="released">Released</li>
                         </ul>
                     </div>
                 </div>
@@ -138,11 +160,11 @@
             </div>
         </div>
     </div>
-    <!-- Rename Modal-->
+    <!-- Rename / Edit Task Modal-->
     <div id="rename-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Rename modal</h3>
+                <h3>Edit Task</h3>
                 <button id="close-rename-modal" class="btn-close">×</button>
             </div>
             <div class="modal-body">
@@ -154,6 +176,10 @@
                     <label for="rename-roadmap-description">Description</label>
                     <textarea id="rename-roadmap-description" rows="4"
                         placeholder="What's this roadmap about?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="rename-task-tags">Tags</label>
+                    <input type="text" id="rename-task-tags" placeholder="comma separated, e.g. Economy, Mining" />
                 </div>
             </div>
             <div class="modal-footer">

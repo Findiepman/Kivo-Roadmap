@@ -9,6 +9,17 @@ const metaEl = document.querySelector(".roadmap-meta");
 const boardEl = document.getElementById("board-container");
 const unavailableEl = document.getElementById("unavailable");
 
+// Same deterministic tag-colour mapping as storage.js (kept local so this page
+// stays dependency-free).
+function tagColorClass(tag) {
+    let hash = 0;
+    const s = String(tag).toLowerCase();
+    for (let i = 0; i < s.length; i++) {
+        hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+    }
+    return "tag-c" + (hash % 8);
+}
+
 function showUnavailable() {
     if (boardEl) boardEl.style.display = "none";
     if (unavailableEl) unavailableEl.style.display = "block";
@@ -19,7 +30,6 @@ function showUnavailable() {
 function renderTask(task) {
     const card = document.createElement("div");
     card.className = "task-card";
-    if (task.column === "done") card.classList.add("done");
 
     const title = document.createElement("div");
     title.className = "task-title";
@@ -37,7 +47,7 @@ function renderTask(task) {
         tagsWrap.className = "task-tags";
         task.tags.forEach(tag => {
             const pill = document.createElement("span");
-            pill.className = "task-tag";
+            pill.className = "task-tag " + tagColorClass(tag);
             pill.textContent = tag;
             tagsWrap.appendChild(pill);
         });
@@ -52,11 +62,11 @@ function render(data) {
     document.title = `${data.roadmap.title} - Kivo`;
     metaEl.textContent = data.roadmap.description || "";
 
-    const columns = { todo: [], doing: [], done: [] };
+    const columns = { planned: [], in_progress: [], testing: [], released: [] };
     [...data.tasks]
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .forEach(t => {
-            const col = columns[t.column] ? t.column : "todo";
+            const col = columns[t.column] ? t.column : "planned";
             columns[col].push(t);
         });
 
