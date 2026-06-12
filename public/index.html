@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in - Kivo</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/auth.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-lion-32.png">
+</head>
+
+<body class="auth-body">
+
+    <div class="auth-card">
+        <div class="auth-logo">Kivo</div>
+        <h1 class="auth-title" id="auth-title">Welcome back</h1>
+        <p class="auth-subtitle" id="auth-subtitle">Sign in to your roadmaps</p>
+
+        <form id="auth-form" class="auth-form" autocomplete="on">
+            <div class="form-group">
+                <label for="auth-username">Username</label>
+                <input type="text" id="auth-username" name="username" placeholder="your username"
+                    autocomplete="username" />
+            </div>
+            <div class="form-group">
+                <label for="auth-password">Password</label>
+                <input type="password" id="auth-password" name="password" placeholder="your password"
+                    autocomplete="current-password" />
+            </div>
+
+            <p class="auth-error" id="auth-error"></p>
+
+            <button type="submit" class="btn-create auth-submit" id="auth-submit">Sign in</button>
+        </form>
+
+        <p class="auth-toggle">
+            <span id="auth-toggle-text">Don't have an account?</span>
+            <button type="button" id="auth-toggle-btn" class="auth-link">Create one</button>
+        </p>
+    </div>
+
+    <script type="module" src="scripts/auth.js"></script>
+</body>
+
+</html>

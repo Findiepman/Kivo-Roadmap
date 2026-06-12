@@ -26,7 +26,12 @@
             </nav>
 
             <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <span class="sidebar-user-avatar">👤</span>
+                    <span class="sidebar-username" id="sidebar-username"></span>
+                </div>
                 <button class="btn-new-roadmap">+ New Roadmap</button>
+                <button class="btn-logout" id="logout-btn">Log out</button>
             </div>
         </aside>
 
@@ -116,6 +121,37 @@
                 <div class="modal-footer">
                     <button id="cancel-rename-btn" class="btn-cancel">Cancel</button>
                     <button id="rename-btn" class="btn-create">Save edits</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Access Modal -->
+        <div id="access-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Manage Access</h3>
+                    <button id="close-access-modal" class="btn-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="access-list" id="access-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+
+                    <div class="access-add">
+                        <div class="form-group">
+                            <label for="access-username">Add a person</label>
+                            <input type="text" id="access-username" placeholder="username" />
+                        </div>
+                        <div class="form-group access-role-group">
+                            <label for="access-role">Role</label>
+                            <select id="access-role" class="access-role-select">
+                                <option value="editor">Editor</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
+                        </div>
+                        <button id="access-add-btn" class="btn-create access-add-btn">Add</button>
+                        <p class="auth-error" id="access-error"></p>
+                    </div>
                 </div>
             </div>
         </div>

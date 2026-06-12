@@ -1,0 +1,20 @@
+{
+  "name": "kivo-roadmap",
+  "version": "1.0.0",
+  "description": "Kivo - Simple kanban roadmaps with accounts, roles and a real backend",
+  "type": "commonjs",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "better-sqlite3": "^9.4.3",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.1"
+  }
+}
