@@ -16,6 +16,7 @@ const authRoutes = require('./routes/auth');
 const roadmapRoutes = require('./routes/roadmaps');
 const taskRoutes = require('./routes/tasks');
 const accessRoutes = require('./routes/access');
+const publicRoutes = require('./routes/public');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +26,8 @@ app.use(express.json());
 
 // --- API routes ---
 app.use('/api/auth', authRoutes);
+// Public, no-auth read-only access by share token.
+app.use('/api/public', publicRoutes);
 // Nested resources mounted before the bare /api/roadmaps so the longer
 // paths resolve to their own routers.
 app.use('/api/roadmaps/:id/tasks', taskRoutes);

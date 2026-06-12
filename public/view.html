@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Roadmap - Kivo</title>
+    <link rel="stylesheet" href="styles/roadmap.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-lion-32.png">
+</head>
+
+<body>
+
+    <div class="roadmap-wrapper">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-logo">Kivo</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <span class="nav-icon">→</span>
+                    <span class="nav-text">Sign in to Kivo</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+
+            <header class="header">
+                <div class="header-left">
+                    <h2 id="roadmap-title">Loading…</h2>
+                    <p class="roadmap-meta"></p>
+                </div>
+                <div class="header-right">
+                    <span class="read-only-badge">Public · read-only</span>
+                </div>
+            </header>
+
+            <div class="board-container" id="board-container">
+
+                <div class="board-column" data-column="todo">
+                    <div class="column-header">
+                        <h3 class="column-title">To Do</h3>
+                        <span class="column-count">0</span>
+                    </div>
+                    <div class="tasks-list" id="tasks-todo"></div>
+                </div>
+
+                <div class="board-column" data-column="doing">
+                    <div class="column-header">
+                        <h3 class="column-title">Doing</h3>
+                        <span class="column-count">0</span>
+                    </div>
+                    <div class="tasks-list" id="tasks-doing"></div>
+                </div>
+
+                <div class="board-column" data-column="done">
+                    <div class="column-header">
+                        <h3 class="column-title">Done</h3>
+                        <span class="column-count">0</span>
+                    </div>
+                    <div class="tasks-list" id="tasks-done"></div>
+                </div>
+
+            </div>
+
+            <!-- Shown when the token is invalid/disabled -->
+            <div id="unavailable" class="public-unavailable" style="display:none;">
+                <h2>This roadmap isn't available</h2>
+                <p>The link may be disabled or incorrect.</p>
+                <a href="index.html" class="btn-create" style="display:inline-block;text-decoration:none;">Go to Kivo</a>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script type="module" src="scripts/public.js"></script>
+</body>
+
+</html>

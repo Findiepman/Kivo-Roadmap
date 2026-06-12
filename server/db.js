@@ -54,4 +54,13 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_access_user ON roadmap_access(user_id);
 `);
 
+// --- Migrations ---
+// public_token: when set, the roadmap is viewable read-only by anyone holding
+// the token (no login). NULL = not publicly shared.
+const roadmapCols = db.prepare("PRAGMA table_info(roadmaps)").all();
+if (!roadmapCols.some((c) => c.name === 'public_token')) {
+  db.exec('ALTER TABLE roadmaps ADD COLUMN public_token TEXT');
+}
+db.exec('CREATE INDEX IF NOT EXISTS idx_roadmaps_public ON roadmaps(public_token)');
+
 module.exports = db;

@@ -47,6 +47,13 @@ function initDashboard() {
     const accessAddBtn = document.getElementById("access-add-btn");
     const accessError = document.getElementById("access-error");
 
+    // public share link
+    const shareCreateBtn = document.getElementById("share-create-btn");
+    const shareLinkBox = document.getElementById("share-link-box");
+    const shareLinkInput = document.getElementById("share-link-input");
+    const shareCopyBtn = document.getElementById("share-copy-btn");
+    const shareDisableBtn = document.getElementById("share-disable-btn");
+
     // dashboard info
     const activeRoadmaps = document.getElementById("page-subtitle");
 
@@ -239,7 +246,64 @@ function initDashboard() {
         accessRole.value = "editor";
         accessModal.style.display = "flex";
         await renderAccessList();
+        await loadShareLink();
     }
+
+    // ===== PUBLIC SHARE LINK =====
+    function publicUrl(token) {
+        return `${window.location.origin}/view.html?token=${token}`;
+    }
+
+    function renderShareLink(token) {
+        if (token) {
+            shareCreateBtn.style.display = "none";
+            shareLinkBox.style.display = "flex";
+            shareLinkInput.value = publicUrl(token);
+        } else {
+            shareCreateBtn.style.display = "block";
+            shareLinkBox.style.display = "none";
+            shareLinkInput.value = "";
+        }
+    }
+
+    async function loadShareLink() {
+        try {
+            const res = await api.getShare(accessRoadmapId);
+            renderShareLink(res && res.publicToken);
+        } catch (err) {
+            renderShareLink(null);
+        }
+    }
+
+    shareCreateBtn.addEventListener("click", async () => {
+        try {
+            const res = await api.createShare(accessRoadmapId);
+            renderShareLink(res.publicToken);
+        } catch (err) {
+            accessError.textContent = err.error || "Could not create link";
+        }
+    });
+
+    shareDisableBtn.addEventListener("click", async () => {
+        try {
+            await api.revokeShare(accessRoadmapId);
+            renderShareLink(null);
+        } catch (err) {
+            accessError.textContent = err.error || "Could not disable link";
+        }
+    });
+
+    shareCopyBtn.addEventListener("click", async () => {
+        shareLinkInput.select();
+        try {
+            await navigator.clipboard.writeText(shareLinkInput.value);
+        } catch (err) {
+            document.execCommand("copy"); // fallback for older browsers
+        }
+        const original = shareCopyBtn.textContent;
+        shareCopyBtn.textContent = "Copied!";
+        setTimeout(() => { shareCopyBtn.textContent = original; }, 1500);
+    });
 
     async function renderAccessList() {
         accessList.innerHTML = "";

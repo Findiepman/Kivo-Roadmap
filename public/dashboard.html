@@ -152,6 +152,16 @@
                         <button id="access-add-btn" class="btn-create access-add-btn">Add</button>
                         <p class="auth-error" id="access-error"></p>
                     </div>
+
+                    <div class="public-share">
+                        <label class="public-share-label">Public link (anyone with the link can view, read-only)</label>
+                        <button id="share-create-btn" class="btn-cancel share-create-btn">Create public link</button>
+                        <div id="share-link-box" class="share-link-box" style="display:none;">
+                            <input type="text" id="share-link-input" class="share-link-input" readonly />
+                            <button id="share-copy-btn" class="btn-create share-copy-btn">Copy</button>
+                            <button id="share-disable-btn" class="access-remove share-disable-btn">Disable</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

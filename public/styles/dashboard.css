@@ -762,3 +762,54 @@ body {
     min-height: 1.2rem;
     margin-top: 0.5rem;
 }
+
+/* Public share link */
+.public-share {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+}
+
+.public-share-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 0.75rem;
+}
+
+.share-create-btn {
+    width: 100%;
+}
+
+.share-link-box {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.share-link-input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    color: #93c5fd;
+    font-size: 0.85rem;
+    font-family: inherit;
+}
+
+.share-link-input:focus {
+    outline: none;
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+.share-copy-btn {
+    padding: 0.6rem 1rem;
+    white-space: nowrap;
+}
+
+.share-disable-btn {
+    white-space: nowrap;
+}

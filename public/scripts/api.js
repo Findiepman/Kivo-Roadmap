@@ -50,4 +50,7 @@ export const api = {
   getAccess: (roadmapId) => request('GET', `/roadmaps/${roadmapId}/access`),
   addAccess: (roadmapId, username, role) => request('POST', `/roadmaps/${roadmapId}/access`, { username, role }),
   removeAccess: (roadmapId, userId) => request('DELETE', `/roadmaps/${roadmapId}/access/${userId}`),
+  getShare: (roadmapId) => request('GET', `/roadmaps/${roadmapId}/share`),
+  createShare: (roadmapId) => request('POST', `/roadmaps/${roadmapId}/share`),
+  revokeShare: (roadmapId) => request('DELETE', `/roadmaps/${roadmapId}/share`),
 }

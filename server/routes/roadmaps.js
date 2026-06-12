@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { getRole } = require('../permissions');
@@ -102,6 +103,51 @@ router.delete('/:id', (req, res) => {
 
   db.prepare('DELETE FROM roadmaps WHERE id = ?').run(id);
   res.json({ success: true });
+});
+
+// --- Public share link (owner only) ---
+
+// GET /api/roadmaps/:id/share — current public token (or null).
+router.get('/:id/share', (req, res) => {
+  const id = Number(req.params.id);
+  const role = getRole(id, req.user.userId);
+  if (!role) return res.status(404).json({ error: 'Roadmap not found' });
+  if (role !== 'owner') {
+    return res.status(403).json({ error: 'Only the owner can manage the share link' });
+  }
+  const row = db.prepare('SELECT public_token FROM roadmaps WHERE id = ?').get(id);
+  res.json({ publicToken: row.public_token || null });
+});
+
+// POST /api/roadmaps/:id/share — create the public link (idempotent: reuses an
+// existing token if one is already set).
+router.post('/:id/share', (req, res) => {
+  const id = Number(req.params.id);
+  const role = getRole(id, req.user.userId);
+  if (!role) return res.status(404).json({ error: 'Roadmap not found' });
+  if (role !== 'owner') {
+    return res.status(403).json({ error: 'Only the owner can create a share link' });
+  }
+
+  let row = db.prepare('SELECT public_token FROM roadmaps WHERE id = ?').get(id);
+  if (!row.public_token) {
+    const token = crypto.randomBytes(16).toString('hex');
+    db.prepare('UPDATE roadmaps SET public_token = ? WHERE id = ?').run(token, id);
+    row = { public_token: token };
+  }
+  res.json({ publicToken: row.public_token });
+});
+
+// DELETE /api/roadmaps/:id/share — revoke the public link.
+router.delete('/:id/share', (req, res) => {
+  const id = Number(req.params.id);
+  const role = getRole(id, req.user.userId);
+  if (!role) return res.status(404).json({ error: 'Roadmap not found' });
+  if (role !== 'owner') {
+    return res.status(403).json({ error: 'Only the owner can revoke the share link' });
+  }
+  db.prepare('UPDATE roadmaps SET public_token = NULL WHERE id = ?').run(id);
+  res.json({ publicToken: null });
 });
 
 module.exports = router;
