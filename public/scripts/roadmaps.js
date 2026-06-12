@@ -282,22 +282,24 @@ function renderTasks() {
                     menu.classList.toggle("open");
                 });
 
-                // ctrl click = delete, shift click = rename
-                taskCard.addEventListener("click", (e) => {
-                    if (e.ctrlKey) {
-                        openDeleteTaskModal(task.id, columnName);
-                        return;
-                    }
-                    if (e.shiftKey) {
-                        openRenameTaskModal(task.id, columnName);
-                        return;
-                    }
-                });
-
                 // drag events
                 taskCard.addEventListener("dragstart", dragStart);
                 taskCard.addEventListener("dragend", dragEnd);
             }
+
+            // klik op de kaart: ctrl=delete, shift=rename (editors),
+            // gewone klik = beschrijving in/uitklappen (iedereen)
+            taskCard.addEventListener("click", (e) => {
+                if (editable && e.ctrlKey) {
+                    openDeleteTaskModal(task.id, columnName);
+                    return;
+                }
+                if (editable && e.shiftKey) {
+                    openRenameTaskModal(task.id, columnName);
+                    return;
+                }
+                taskCard.classList.toggle("expanded");
+            });
 
             if (menu) taskCard.appendChild(menu);
             taskCard.appendChild(title);

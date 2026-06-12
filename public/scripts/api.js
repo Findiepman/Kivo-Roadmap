@@ -36,6 +36,7 @@ export const api = {
     request('POST', '/auth/login', { username, password }, { skipAuthRedirect: true }),
   register: (username, password) =>
     request('POST', '/auth/register', { username, password }, { skipAuthRedirect: true }),
+  config: () => request('GET', '/auth/config', null, { skipAuthRedirect: true }),
   me: () => request('GET', '/auth/me'),
   getRoadmaps: () => request('GET', '/roadmaps'),
   createRoadmap: (data) => request('POST', '/roadmaps', data),

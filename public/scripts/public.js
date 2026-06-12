@@ -42,6 +42,9 @@ function renderTask(task) {
     card.appendChild(title);
     card.appendChild(desc);
 
+    // klik om lange beschrijving volledig te tonen
+    card.addEventListener("click", () => card.classList.toggle("expanded"));
+
     if (Array.isArray(task.tags) && task.tags.length) {
         const tagsWrap = document.createElement("div");
         tagsWrap.className = "task-tags";

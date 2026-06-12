@@ -25,6 +25,36 @@ router.get('/', (req, res) => {
     )
     .all({ userId });
 
+  // Attach per-column task counts so the dashboard can show progress.
+  if (rows.length) {
+    const ids = rows.map((r) => r.id);
+    const placeholders = ids.map(() => '?').join(',');
+    const countRows = db
+      .prepare(
+        `SELECT roadmap_id, "column" AS col, COUNT(*) AS c
+         FROM tasks WHERE roadmap_id IN (${placeholders})
+         GROUP BY roadmap_id, "column"`
+      )
+      .all(...ids);
+
+    const byRoadmap = {};
+    for (const cr of countRows) {
+      if (!byRoadmap[cr.roadmap_id]) byRoadmap[cr.roadmap_id] = {};
+      byRoadmap[cr.roadmap_id][cr.col] = cr.c;
+    }
+
+    for (const r of rows) {
+      const c = byRoadmap[r.id] || {};
+      r.counts = {
+        planned: c.planned || 0,
+        in_progress: c.in_progress || 0,
+        testing: c.testing || 0,
+        released: c.released || 0,
+        total: (c.planned || 0) + (c.in_progress || 0) + (c.testing || 0) + (c.released || 0),
+      };
+    }
+  }
+
   res.json(rows);
 });
 

@@ -8,7 +8,8 @@ export function roadmapFromApi(r) {
         id: r.id,
         name: r.title,
         desc: r.description || "",
-        role: r.role
+        role: r.role,
+        counts: r.counts || { planned: 0, in_progress: 0, testing: 0, released: 0, total: 0 }
     };
 }
 

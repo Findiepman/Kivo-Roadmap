@@ -9,8 +9,10 @@ const errorEl = document.getElementById("auth-error");
 const submitBtn = document.getElementById("auth-submit");
 const toggleText = document.getElementById("auth-toggle-text");
 const toggleBtn = document.getElementById("auth-toggle-btn");
+const toggleWrap = document.querySelector(".auth-toggle");
 
 let mode = "login"; // of "register"
+let registrationAllowed = false;
 
 function applyMode() {
     if (mode === "login") {
@@ -82,5 +84,23 @@ async function checkExistingSession() {
     }
 }
 
+// Only show the "create an account" toggle if the server allows registration.
+async function applyConfig() {
+    try {
+        const cfg = await api.config();
+        registrationAllowed = !!(cfg && cfg.allowRegistration);
+    } catch (err) {
+        registrationAllowed = false;
+    }
+    if (!registrationAllowed) {
+        mode = "login";
+        if (toggleWrap) toggleWrap.style.display = "none";
+        applyMode();
+    } else if (toggleWrap) {
+        toggleWrap.style.display = "";
+    }
+}
+
 applyMode();
+applyConfig();
 checkExistingSession();

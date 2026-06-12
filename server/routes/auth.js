@@ -11,6 +11,16 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_EXPIRY = '30d';
 const SALT_ROUNDS = 12;
 
+// Self-service registration is OFF unless ALLOW_REGISTRATION=true.
+function registrationAllowed() {
+  return String(process.env.ALLOW_REGISTRATION || '').toLowerCase() === 'true';
+}
+
+// GET /api/auth/config — public flags the login page reads (no auth).
+router.get('/config', (req, res) => {
+  res.json({ allowRegistration: registrationAllowed() });
+});
+
 function signToken(user) {
   return jwt.sign(
     { userId: user.id, username: user.username },
@@ -21,6 +31,10 @@ function signToken(user) {
 
 // POST /api/auth/register
 router.post('/register', (req, res) => {
+  if (!registrationAllowed()) {
+    return res.status(403).json({ error: 'Registration is disabled' });
+  }
+
   const { username, password } = req.body || {};
 
   if (!username || !password) {

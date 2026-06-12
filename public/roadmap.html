@@ -9,95 +9,79 @@
     <link rel="stylesheet" href="styles/roadmap.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-lion-32.png">
 </head>
 
 <body>
 
-    <div class="roadmap-wrapper">
+    <div class="board-shell">
 
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h1 class="sidebar-logo">Kivo</h1>
-            </div>
-
-            <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-item">
-                    <span class="nav-icon">←</span>
-                    <span class="nav-text">Back to Dashboard</span>
-                </a>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <div class="main-content">
-
-            <!-- Header -->
-            <header class="header">
-                <div class="header-left">
+        <!-- Top bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <a href="dashboard.html" class="back-link" title="Back to dashboard">←</a>
+                <div class="board-title">
                     <h2 id="roadmap-title"></h2>
                     <p class="roadmap-meta"></p>
                 </div>
-                <div class="header-right">
-                </div>
-            </header>
+            </div>
+            <div class="header-right">
+            </div>
+        </header>
 
-            <div class="board-container">
+        <div class="board-container">
 
-                <!-- Planned Column -->
-                <div class="board-column" data-column="planned">
-                    <div class="column-header">
-                        <div class="column-heading">
-                            <span class="column-dot"></span>
-                            <h3 class="column-title">Planned</h3>
-                        </div>
-                        <span class="column-count">0</span>
+            <!-- Planned Column -->
+            <div class="board-column" data-column="planned">
+                <div class="column-header">
+                    <div class="column-heading">
+                        <span class="column-dot"></span>
+                        <h3 class="column-title">Planned</h3>
                     </div>
-                    <button class="btn-add-task" data-column="planned">+ Add Task</button>
-                    <div class="tasks-list" id="tasks-planned"></div>
+                    <span class="column-count">0</span>
                 </div>
+                <button class="btn-add-task" data-column="planned">+ Add Task</button>
+                <div class="tasks-list" id="tasks-planned"></div>
+            </div>
 
-                <!-- In Progress Column -->
-                <div class="board-column" data-column="in_progress">
-                    <div class="column-header">
-                        <div class="column-heading">
-                            <span class="column-dot"></span>
-                            <h3 class="column-title">In Progress</h3>
-                        </div>
-                        <span class="column-count">0</span>
+            <!-- In Progress Column -->
+            <div class="board-column" data-column="in_progress">
+                <div class="column-header">
+                    <div class="column-heading">
+                        <span class="column-dot"></span>
+                        <h3 class="column-title">In Progress</h3>
                     </div>
-                    <button class="btn-add-task" data-column="in_progress">+ Add Task</button>
-                    <div class="tasks-list" id="tasks-in_progress"></div>
+                    <span class="column-count">0</span>
                 </div>
+                <button class="btn-add-task" data-column="in_progress">+ Add Task</button>
+                <div class="tasks-list" id="tasks-in_progress"></div>
+            </div>
 
-                <!-- Testing Column -->
-                <div class="board-column" data-column="testing">
-                    <div class="column-header">
-                        <div class="column-heading">
-                            <span class="column-dot"></span>
-                            <h3 class="column-title">Testing</h3>
-                        </div>
-                        <span class="column-count">0</span>
+            <!-- Testing Column -->
+            <div class="board-column" data-column="testing">
+                <div class="column-header">
+                    <div class="column-heading">
+                        <span class="column-dot"></span>
+                        <h3 class="column-title">Testing</h3>
                     </div>
-                    <button class="btn-add-task" data-column="testing">+ Add Task</button>
-                    <div class="tasks-list" id="tasks-testing"></div>
+                    <span class="column-count">0</span>
                 </div>
+                <button class="btn-add-task" data-column="testing">+ Add Task</button>
+                <div class="tasks-list" id="tasks-testing"></div>
+            </div>
 
-                <!-- Released Column -->
-                <div class="board-column" data-column="released">
-                    <div class="column-header">
-                        <div class="column-heading">
-                            <span class="column-dot"></span>
-                            <h3 class="column-title">Released</h3>
-                        </div>
-                        <span class="column-count">0</span>
+            <!-- Released Column -->
+            <div class="board-column" data-column="released">
+                <div class="column-header">
+                    <div class="column-heading">
+                        <span class="column-dot"></span>
+                        <h3 class="column-title">Released</h3>
                     </div>
-                    <button class="btn-add-task" data-column="released">+ Add Task</button>
-                    <div class="tasks-list" id="tasks-released"></div>
+                    <span class="column-count">0</span>
                 </div>
-
+                <button class="btn-add-task" data-column="released">+ Add Task</button>
+                <div class="tasks-list" id="tasks-released"></div>
             </div>
 
         </div>
@@ -114,7 +98,7 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="task-name">Task Name</label>
-                    <input type="text" id="task-name" placeholder="e.g., Design Landing Page" />
+                    <input type="text" id="task-name" placeholder="e.g., Pets v1.1.0" />
                 </div>
                 <div class="form-group">
                     <label for="task-desc">Description</label>
@@ -170,12 +154,12 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="rename-roadmap-name">Name</label>
-                    <input type="text" id="rename-roadmap-name" placeholder="e.g., Website Redesign" />
+                    <input type="text" id="rename-roadmap-name" placeholder="e.g., Pets v1.1.0" />
                 </div>
                 <div class="form-group">
                     <label for="rename-roadmap-description">Description</label>
                     <textarea id="rename-roadmap-description" rows="4"
-                        placeholder="What's this roadmap about?"></textarea>
+                        placeholder="Describe this task..."></textarea>
                 </div>
                 <div class="form-group">
                     <label for="rename-task-tags">Tags</label>

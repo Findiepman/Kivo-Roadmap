@@ -122,6 +122,30 @@ function initDashboard() {
             card.appendChild(header);
             card.appendChild(desc);
 
+            // per-column task counts
+            const stats = document.createElement("div");
+            stats.className = "roadmap-stats";
+            const counts = roadmap.counts || {};
+            [
+                ["planned", "Planned"],
+                ["in_progress", "In Progress"],
+                ["testing", "Testing"],
+                ["released", "Released"]
+            ].forEach(([key, label]) => {
+                const stat = document.createElement("span");
+                stat.className = "stat";
+                stat.title = label;
+                const dot = document.createElement("span");
+                dot.className = "stat-dot stat-" + key;
+                const num = document.createElement("span");
+                num.className = "stat-num";
+                num.textContent = counts[key] || 0;
+                stat.appendChild(dot);
+                stat.appendChild(num);
+                stats.appendChild(stat);
+            });
+            card.appendChild(stats);
+
             // 3-puntjes menu enkel voor de owner
             if (isOwner) {
                 const menuBtn = document.createElement("button");
@@ -461,6 +485,8 @@ function initDashboard() {
         state.user = me;
         const userLabel = document.getElementById("sidebar-username");
         if (userLabel) userLabel.textContent = me.username;
+        const avatar = document.getElementById("user-avatar");
+        if (avatar) avatar.textContent = (me.username || "?").charAt(0);
 
         // alleen toegestane accounts mogen roadmaps aanmaken
         if (me.canCreateRoadmaps === false) {

@@ -1,5 +1,4 @@
-/* Login / register page — uses the shared theme tokens. Overrides main.css's
-   landing-page background so the auth screen matches the app's dark palette. */
+/* Login page — uses theme.css tokens + shared form/button styles. */
 
 .auth-body {
     min-height: 100vh;
@@ -7,113 +6,63 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background: var(--bg);
-    background-image:
-        radial-gradient(60rem 40rem at 50% -10%, rgba(59, 130, 246, 0.12), transparent 60%);
+    background:
+        radial-gradient(55rem 40rem at 50% -5%, rgba(124, 107, 255, 0.16), transparent 60%),
+        radial-gradient(45rem 35rem at 80% 110%, rgba(200, 80, 232, 0.1), transparent 55%),
+        var(--bg);
 }
 
 .auth-card {
     width: 100%;
-    max-width: 420px;
-    background: var(--panel-2);
-    border: 1px solid var(--border-strong);
+    max-width: 410px;
+    background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--border-2);
     border-radius: var(--radius);
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
-    padding: 2.5rem 2rem;
+    box-shadow: var(--shadow);
+    padding: 2.75rem 2.25rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--brand-grad);
 }
 
 .auth-logo {
-    font-size: 1.8rem;
+    font-size: 2rem;
     font-weight: 900;
-    color: #ffffff;
     letter-spacing: -0.03em;
     text-align: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
+    background: var(--brand-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .auth-title {
-    font-size: 1.6rem;
+    font-size: 1.55rem;
     font-weight: 800;
-    color: #ffffff;
+    color: #fff;
     text-align: center;
     letter-spacing: -0.02em;
     margin-bottom: 0.4rem;
 }
 
 .auth-subtitle {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     color: var(--text-muted);
     text-align: center;
     margin-bottom: 2rem;
 }
 
-.auth-form .form-group {
-    margin-bottom: 1.25rem;
-    position: relative;
-}
+.auth-form .form-group { margin-bottom: 1.2rem; }
 
-.auth-form .form-group label {
-    display: block;
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-bottom: 0.5rem;
-}
-
-.auth-form .form-group input {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-sm);
-    padding: 0.85rem 1rem;
-    color: #ffffff;
-    font-size: 0.95rem;
-    font-family: inherit;
-    transition: all 0.2s;
-}
-
-.auth-form .form-group input::placeholder {
-    color: var(--text-dim);
-}
-
-.auth-form .form-group input:focus {
-    outline: none;
-    background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(59, 130, 246, 0.5);
-}
-
-.auth-submit {
-    width: 100%;
-    margin-top: 0.5rem;
-    padding: 0.9rem;
-    font-size: 1rem;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    border: none;
-    color: white;
-    border-radius: 8px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
-}
-
-.auth-submit:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
-
-.auth-submit:disabled {
-    opacity: 0.6;
-    cursor: default;
-    transform: none;
-}
-
-.auth-error {
-    color: #fca5a5;
-    font-size: 0.9rem;
-    min-height: 1.2rem;
-    margin-bottom: 0.5rem;
-}
+.auth-submit { width: 100%; margin-top: 0.5rem; padding: 0.92rem; font-size: 1rem; }
 
 .auth-toggle {
     text-align: center;
@@ -125,16 +74,13 @@
 .auth-link {
     background: none;
     border: none;
-    color: #60a5fa;
-    font-weight: 600;
+    color: var(--brand-solid);
+    font-weight: 700;
     font-size: 0.9rem;
     cursor: pointer;
     font-family: inherit;
     padding: 0;
-    margin-left: 0.25rem;
+    margin-left: 0.3rem;
 }
 
-.auth-link:hover {
-    color: #93c5fd;
-    text-decoration: underline;
-}
+.auth-link:hover { color: #b3a8ff; text-decoration: underline; }

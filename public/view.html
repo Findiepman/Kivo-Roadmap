@@ -9,95 +9,79 @@
     <link rel="stylesheet" href="styles/roadmap.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-lion-32.png">
 </head>
 
 <body>
 
-    <div class="roadmap-wrapper">
+    <div class="board-shell">
 
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h1 class="sidebar-logo">Kivo</h1>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="index.html" class="nav-item">
-                    <span class="nav-icon">→</span>
-                    <span class="nav-text">Sign in to Kivo</span>
-                </a>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <div class="main-content">
-
-            <header class="header">
-                <div class="header-left">
+        <!-- Top bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <div class="board-title">
                     <h2 id="roadmap-title">Loading…</h2>
                     <p class="roadmap-meta"></p>
                 </div>
-                <div class="header-right">
-                    <span class="read-only-badge">Public · read-only</span>
-                </div>
-            </header>
+            </div>
+            <div class="header-right">
+                <span class="brand">Kivo</span>
+            </div>
+        </header>
 
-            <div class="board-container" id="board-container">
+        <div class="board-container" id="board-container">
 
-                <div class="board-column" data-column="planned">
-                    <div class="column-header">
-                        <div class="column-heading">
-                            <span class="column-dot"></span>
-                            <h3 class="column-title">Planned</h3>
-                        </div>
-                        <span class="column-count">0</span>
+            <div class="board-column" data-column="planned">
+                <div class="column-header">
+                    <div class="column-heading">
+                        <span class="column-dot"></span>
+                        <h3 class="column-title">Planned</h3>
                     </div>
-                    <div class="tasks-list" id="tasks-planned"></div>
+                    <span class="column-count">0</span>
                 </div>
-
-                <div class="board-column" data-column="in_progress">
-                    <div class="column-header">
-                        <div class="column-heading">
-                            <span class="column-dot"></span>
-                            <h3 class="column-title">In Progress</h3>
-                        </div>
-                        <span class="column-count">0</span>
-                    </div>
-                    <div class="tasks-list" id="tasks-in_progress"></div>
-                </div>
-
-                <div class="board-column" data-column="testing">
-                    <div class="column-header">
-                        <div class="column-heading">
-                            <span class="column-dot"></span>
-                            <h3 class="column-title">Testing</h3>
-                        </div>
-                        <span class="column-count">0</span>
-                    </div>
-                    <div class="tasks-list" id="tasks-testing"></div>
-                </div>
-
-                <div class="board-column" data-column="released">
-                    <div class="column-header">
-                        <div class="column-heading">
-                            <span class="column-dot"></span>
-                            <h3 class="column-title">Released</h3>
-                        </div>
-                        <span class="column-count">0</span>
-                    </div>
-                    <div class="tasks-list" id="tasks-released"></div>
-                </div>
-
+                <div class="tasks-list" id="tasks-planned"></div>
             </div>
 
-            <!-- Shown when the token is invalid/disabled -->
-            <div id="unavailable" class="public-unavailable" style="display:none;">
-                <h2>This roadmap isn't available</h2>
-                <p>The link may be disabled or incorrect.</p>
-                <a href="index.html" class="btn-create" style="display:inline-block;text-decoration:none;">Go to Kivo</a>
+            <div class="board-column" data-column="in_progress">
+                <div class="column-header">
+                    <div class="column-heading">
+                        <span class="column-dot"></span>
+                        <h3 class="column-title">In Progress</h3>
+                    </div>
+                    <span class="column-count">0</span>
+                </div>
+                <div class="tasks-list" id="tasks-in_progress"></div>
             </div>
 
+            <div class="board-column" data-column="testing">
+                <div class="column-header">
+                    <div class="column-heading">
+                        <span class="column-dot"></span>
+                        <h3 class="column-title">Testing</h3>
+                    </div>
+                    <span class="column-count">0</span>
+                </div>
+                <div class="tasks-list" id="tasks-testing"></div>
+            </div>
+
+            <div class="board-column" data-column="released">
+                <div class="column-header">
+                    <div class="column-heading">
+                        <span class="column-dot"></span>
+                        <h3 class="column-title">Released</h3>
+                    </div>
+                    <span class="column-count">0</span>
+                </div>
+                <div class="tasks-list" id="tasks-released"></div>
+            </div>
+
+        </div>
+
+        <!-- Shown when the token is invalid/disabled -->
+        <div id="unavailable" class="public-unavailable" style="display:none;">
+            <h2>This roadmap isn't available</h2>
+            <p>The link may be disabled or incorrect.</p>
         </div>
 
     </div>
