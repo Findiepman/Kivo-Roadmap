@@ -340,6 +340,13 @@ body {
 .share-copy-btn { padding: 0.6rem 1rem; white-space: nowrap; }
 .share-disable-btn { white-space: nowrap; }
 
+.share-stats {
+    margin-top: 0.85rem;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
 /* =========================
    Responsive
 ========================= */

@@ -290,19 +290,50 @@ function initDashboard() {
         }
     }
 
+    // "2026-06-12 12:33:10" (UTC) -> "3 minutes ago" / local date
+    function formatWhen(ts) {
+        if (!ts) return "";
+        const when = new Date(ts.replace(" ", "T") + "Z");
+        const diff = Date.now() - when.getTime();
+        const min = Math.floor(diff / 60000);
+        if (min < 1) return "just now";
+        if (min < 60) return `${min} minute${min === 1 ? "" : "s"} ago`;
+        const hr = Math.floor(min / 60);
+        if (hr < 24) return `${hr} hour${hr === 1 ? "" : "s"} ago`;
+        const days = Math.floor(hr / 24);
+        if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
+        return when.toLocaleDateString();
+    }
+
+    function renderShareStats(res) {
+        const el = document.getElementById("share-stats");
+        if (!el) return;
+        if (res && res.publicToken) {
+            const n = res.viewCount || 0;
+            let txt = `👁 ${n} view${n === 1 ? "" : "s"}`;
+            if (n > 0 && res.lastViewedAt) txt += ` · last viewed ${formatWhen(res.lastViewedAt)}`;
+            el.textContent = txt;
+            el.style.display = "block";
+        } else {
+            el.style.display = "none";
+        }
+    }
+
     async function loadShareLink() {
         try {
             const res = await api.getShare(accessRoadmapId);
             renderShareLink(res && res.publicToken);
+            renderShareStats(res);
         } catch (err) {
             renderShareLink(null);
+            renderShareStats(null);
         }
     }
 
     shareCreateBtn.addEventListener("click", async () => {
         try {
-            const res = await api.createShare(accessRoadmapId);
-            renderShareLink(res.publicToken);
+            await api.createShare(accessRoadmapId);
+            await loadShareLink(); // refresh link + (fresh) stats
         } catch (err) {
             accessError.textContent = err.error || "Could not create link";
         }
@@ -312,6 +343,7 @@ function initDashboard() {
         try {
             await api.revokeShare(accessRoadmapId);
             renderShareLink(null);
+            renderShareStats(null);
         } catch (err) {
             accessError.textContent = err.error || "Could not disable link";
         }

@@ -61,6 +61,12 @@ const roadmapCols = db.prepare("PRAGMA table_info(roadmaps)").all();
 if (!roadmapCols.some((c) => c.name === 'public_token')) {
   db.exec('ALTER TABLE roadmaps ADD COLUMN public_token TEXT');
 }
+if (!roadmapCols.some((c) => c.name === 'view_count')) {
+  db.exec('ALTER TABLE roadmaps ADD COLUMN view_count INTEGER DEFAULT 0');
+}
+if (!roadmapCols.some((c) => c.name === 'last_viewed_at')) {
+  db.exec('ALTER TABLE roadmaps ADD COLUMN last_viewed_at DATETIME');
+}
 db.exec('CREATE INDEX IF NOT EXISTS idx_roadmaps_public ON roadmaps(public_token)');
 
 // Column-model migration: the board used to be todo/doing/done. It is now

@@ -150,8 +150,14 @@ router.get('/:id/share', (req, res) => {
   if (role !== 'owner') {
     return res.status(403).json({ error: 'Only the owner can manage the share link' });
   }
-  const row = db.prepare('SELECT public_token FROM roadmaps WHERE id = ?').get(id);
-  res.json({ publicToken: row.public_token || null });
+  const row = db
+    .prepare('SELECT public_token, view_count, last_viewed_at FROM roadmaps WHERE id = ?')
+    .get(id);
+  res.json({
+    publicToken: row.public_token || null,
+    viewCount: row.view_count || 0,
+    lastViewedAt: row.last_viewed_at || null,
+  });
 });
 
 // POST /api/roadmaps/:id/share — create the public link (idempotent: reuses an

@@ -17,6 +17,11 @@ router.get('/:token', (req, res) => {
     return res.status(404).json({ error: 'This roadmap is not available' });
   }
 
+  // Count this view (simple anonymous counter — no IPs stored).
+  db.prepare(
+    "UPDATE roadmaps SET view_count = COALESCE(view_count, 0) + 1, last_viewed_at = CURRENT_TIMESTAMP WHERE id = ?"
+  ).run(roadmap.id);
+
   const rows = db
     .prepare(
       'SELECT id, title, description, "column", position, tags ' +
