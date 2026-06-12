@@ -205,8 +205,11 @@ function renderTasks() {
 
         tasksList.innerHTML = ""; // clear tasks
 
+        // defensief: onbekende kolom (bv. stale cache) -> lege lijst
+        const colTasks = roadmap.columns[columnName] || [];
+
         // render elke task
-        roadmap.columns[columnName].forEach(task => {
+        colTasks.forEach(task => {
             const taskCard = document.createElement("div");
             taskCard.className = "task-card";
             if (editable) taskCard.setAttribute("draggable", "true");
@@ -306,7 +309,7 @@ function renderTasks() {
 
         // update kolom count
         const count = columnDiv.querySelector(".column-count");
-        count.textContent = roadmap.columns[columnName].length;
+        count.textContent = colTasks.length;
 
         // drag/drop events per kolom (alleen voor editors)
         if (editable) {
@@ -426,6 +429,7 @@ async function moveTask(taskId, newColumn) {
     }
 
     if (!task) return;
+    if (!roadmap.columns[newColumn]) return; // onbekende doelkolom
 
     // voeg toe aan nieuwe kolom (onderaan)
     roadmap.columns[newColumn].push(task);

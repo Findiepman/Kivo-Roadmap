@@ -5,6 +5,7 @@ services:
     environment:
       - JWT_SECRET=${JWT_SECRET}
       - NODE_ENV=production
+      - ADMIN_USERNAMES=${ADMIN_USERNAMES:-}
     volumes:
       - ./data:/app/data
     # Not published to the host — cloudflared reaches it over the internal

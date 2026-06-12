@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../db');
 const auth = require('../middleware/auth');
-const { getRole } = require('../permissions');
+const { getRole, isAdmin } = require('../permissions');
 
 const router = express.Router();
 
@@ -29,7 +29,12 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/roadmaps — create a roadmap owned by the current user.
+// Restricted to admin accounts (ADMIN_USERNAMES) when that is configured.
 router.post('/', (req, res) => {
+  if (!isAdmin(req.user.username)) {
+    return res.status(403).json({ error: 'Your account is not allowed to create roadmaps' });
+  }
+
   const { title, description } = req.body || {};
 
   if (!title || typeof title !== 'string' || !title.trim()) {

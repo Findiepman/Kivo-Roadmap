@@ -462,6 +462,11 @@ function initDashboard() {
         const userLabel = document.getElementById("sidebar-username");
         if (userLabel) userLabel.textContent = me.username;
 
+        // alleen toegestane accounts mogen roadmaps aanmaken
+        if (me.canCreateRoadmaps === false) {
+            createRoadmapBtn.style.display = "none";
+        }
+
         await loadAndRender();
     }
 

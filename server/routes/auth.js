@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { isAdmin } = require('../permissions');
 
 const router = express.Router();
 
@@ -83,7 +84,11 @@ router.get('/me', auth, (req, res) => {
     return res.status(401).json({ error: 'User no longer exists' });
   }
 
-  res.json({ id: user.id, username: user.username });
+  res.json({
+    id: user.id,
+    username: user.username,
+    canCreateRoadmaps: isAdmin(user.username),
+  });
 });
 
 module.exports = router;

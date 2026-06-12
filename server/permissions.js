@@ -18,4 +18,20 @@ function canWrite(role) {
   return role === 'owner' || role === 'editor';
 }
 
-module.exports = { getRole, canWrite };
+// Accounts allowed to CREATE new roadmaps, from the ADMIN_USERNAMES env var
+// (comma-separated, case-insensitive). If unset/empty, everyone may create
+// (original behaviour). Set ADMIN_USERNAMES=81hp_ to lock creation down.
+function getAdminUsernames() {
+  return (process.env.ADMIN_USERNAMES || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function isAdmin(username) {
+  const admins = getAdminUsernames();
+  if (admins.length === 0) return true; // no restriction configured
+  return admins.includes(String(username || '').toLowerCase());
+}
+
+module.exports = { getRole, canWrite, isAdmin };
