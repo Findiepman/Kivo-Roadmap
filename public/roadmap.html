@@ -4,176 +4,124 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Edit Roadmap - Kivo</title>
+    <title>Roadmap - Kivo</title>
     <link rel="stylesheet" href="styles/theme.css">
     <link rel="stylesheet" href="styles/roadmap.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-lion-32.png">
 </head>
 
-<body>
+<body class="sky-body">
 
-    <div class="board-shell">
-
-        <!-- Top bar -->
-        <header class="topbar">
-            <div class="topbar-left">
-                <a href="dashboard.html" class="back-link" title="Back to dashboard">←</a>
-                <div class="board-title">
-                    <h2 id="roadmap-title"></h2>
-                    <p class="roadmap-meta"></p>
-                </div>
+    <header class="topbar">
+        <div class="topbar-left">
+            <a href="dashboard.html" class="icon-link" title="Back to dashboard" aria-label="Back to dashboard">&#8592;</a>
+            <div class="board-title">
+                <h1 id="roadmap-title"></h1>
+                <p class="roadmap-meta" id="roadmap-meta"></p>
             </div>
-            <div class="header-right">
-            </div>
-        </header>
-
-        <div class="board-container">
-
-            <!-- Planned Column -->
-            <div class="board-column" data-column="planned">
-                <div class="column-header">
-                    <div class="column-heading">
-                        <span class="column-dot"></span>
-                        <h3 class="column-title">Planned</h3>
-                    </div>
-                    <span class="column-count">0</span>
-                </div>
-                <button class="btn-add-task" data-column="planned">+ Add Task</button>
-                <div class="tasks-list" id="tasks-planned"></div>
-            </div>
-
-            <!-- In Progress Column -->
-            <div class="board-column" data-column="in_progress">
-                <div class="column-header">
-                    <div class="column-heading">
-                        <span class="column-dot"></span>
-                        <h3 class="column-title">In Progress</h3>
-                    </div>
-                    <span class="column-count">0</span>
-                </div>
-                <button class="btn-add-task" data-column="in_progress">+ Add Task</button>
-                <div class="tasks-list" id="tasks-in_progress"></div>
-            </div>
-
-            <!-- Testing Column -->
-            <div class="board-column" data-column="testing">
-                <div class="column-header">
-                    <div class="column-heading">
-                        <span class="column-dot"></span>
-                        <h3 class="column-title">Testing</h3>
-                    </div>
-                    <span class="column-count">0</span>
-                </div>
-                <button class="btn-add-task" data-column="testing">+ Add Task</button>
-                <div class="tasks-list" id="tasks-testing"></div>
-            </div>
-
-            <!-- Released Column -->
-            <div class="board-column" data-column="released">
-                <div class="column-header">
-                    <div class="column-heading">
-                        <span class="column-dot"></span>
-                        <h3 class="column-title">Released</h3>
-                    </div>
-                    <span class="column-count">0</span>
-                </div>
-                <button class="btn-add-task" data-column="released">+ Add Task</button>
-                <div class="tasks-list" id="tasks-released"></div>
-            </div>
-
         </div>
+        <div class="topbar-right">
+            <div class="avatar-stack" id="member-stack" title="Members"></div>
+            <button class="btn" id="add-task-btn">+ Add task</button>
+        </div>
+    </header>
 
-    </div>
+    <main class="page">
 
-    <!-- Create Task Modal -->
-    <div id="create-task-modal" class="modal">
-        <div class="modal-content">
+        <section class="status-section" data-status="planned">
+            <div class="section-header">
+                <span class="section-dot planned"></span>
+                <h2>Planned</h2>
+                <span class="section-count" id="count-planned">0</span>
+            </div>
+            <div class="task-rows" id="rows-planned"></div>
+            <p class="section-empty" id="empty-planned">Nothing planned yet.</p>
+        </section>
+
+        <section class="status-section" data-status="in_progress">
+            <div class="section-header">
+                <span class="section-dot in_progress"></span>
+                <h2>In progress</h2>
+                <span class="section-count" id="count-in_progress">0</span>
+            </div>
+            <div class="task-rows" id="rows-in_progress"></div>
+            <p class="section-empty" id="empty-in_progress">Nothing is being worked on right now.</p>
+        </section>
+
+        <section class="status-section" data-status="finished">
+            <div class="section-header">
+                <span class="section-dot finished"></span>
+                <h2>Finished</h2>
+                <span class="section-count" id="count-finished">0</span>
+            </div>
+            <div class="task-rows" id="rows-finished"></div>
+            <p class="section-empty" id="empty-finished">Nothing finished yet.</p>
+        </section>
+
+    </main>
+
+    <!-- Task modal: used for creating and for viewing/editing a task -->
+    <div id="task-modal" class="modal">
+        <div class="modal-card">
             <div class="modal-header">
-                <h3>Create New Task</h3>
-                <button id="close-task-modal" class="btn-close">×</button>
+                <h3 id="task-modal-title">New task</h3>
+                <button id="close-task-modal" class="btn-close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="task-name">Task Name</label>
-                    <input type="text" id="task-name" placeholder="e.g., Pets v1.1.0" />
+                    <label for="task-name">Name</label>
+                    <input type="text" id="task-name" placeholder="e.g. Pets v1.1.0" />
                 </div>
                 <div class="form-group">
                     <label for="task-desc">Description</label>
-                    <textarea id="task-desc" rows="3" placeholder="Describe this task..."></textarea>
+                    <textarea id="task-desc" rows="4" placeholder="Describe this task"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <div class="status-seg" id="task-status-seg">
+                        <button type="button" data-status="planned">Planned</button>
+                        <button type="button" data-status="in_progress">In progress</button>
+                        <button type="button" data-status="finished">Finished</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="task-tags">Tags</label>
                     <input type="text" id="task-tags" placeholder="comma separated, e.g. Economy, Mining" />
                 </div>
-                <div class="form-group">
-                    <label for="task-column">Column</label>
-                    <div class="custom-select" id="task-column">
-                        <div class="selected">Planned</div>
-                        <ul class="options">
-                            <li data-value="planned">Planned</li>
-                            <li data-value="in_progress">In Progress</li>
-                            <li data-value="testing">Testing</li>
-                            <li data-value="released">Released</li>
-                        </ul>
-                    </div>
+                <div class="form-group" id="assignees-group">
+                    <label>Who is working on this?</label>
+                    <div class="assignee-picker" id="task-assignees"></div>
                 </div>
-
+                <p class="form-error" id="task-error"></p>
             </div>
             <div class="modal-footer">
-                <button id="cancel-task-btn" class="btn-cancel">Cancel</button>
-                <button id="create-task-btn" class="btn-create">Create Task</button>
+                <button id="delete-task-btn" class="btn-danger-ghost push-left" style="display:none;">Delete task</button>
+                <button id="cancel-task-btn" class="btn-ghost">Cancel</button>
+                <button id="save-task-btn" class="btn">Save task</button>
             </div>
         </div>
     </div>
-    <!-- Delete Task Confirmation Modal -->
+
+    <!-- Delete task confirmation -->
     <div id="delete-task-modal" class="modal">
-        <div class="modal-content modal-small">
+        <div class="modal-card modal-small">
             <div class="modal-header">
-                <h3>Delete Task?</h3>
-                <button id="close-delete-task-modal" class="btn-close">×</button>
+                <h3>Delete task?</h3>
+                <button id="close-delete-task-modal" class="btn-close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="delete-warning">Are you sure you want to delete this task? This action cannot be undone.</p>
+                <p class="delete-warning">This removes the task for everyone. There is no undo.</p>
             </div>
             <div class="modal-footer">
-                <button id="cancel-delete-task-btn" class="btn-cancel">Cancel</button>
-                <button id="confirm-delete-task-btn" class="btn-delete">Delete</button>
-            </div>
-        </div>
-    </div>
-    <!-- Rename / Edit Task Modal-->
-    <div id="rename-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Edit Task</h3>
-                <button id="close-rename-modal" class="btn-close">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="rename-roadmap-name">Name</label>
-                    <input type="text" id="rename-roadmap-name" placeholder="e.g., Pets v1.1.0" />
-                </div>
-                <div class="form-group">
-                    <label for="rename-roadmap-description">Description</label>
-                    <textarea id="rename-roadmap-description" rows="4"
-                        placeholder="Describe this task..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="rename-task-tags">Tags</label>
-                    <input type="text" id="rename-task-tags" placeholder="comma separated, e.g. Economy, Mining" />
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="cancel-rename-btn" class="btn-cancel">Cancel</button>
-                <button id="rename-btn" class="btn-create">Save edits</button>
+                <button id="cancel-delete-task-btn" class="btn-ghost">Cancel</button>
+                <button id="confirm-delete-task-btn" class="btn-danger">Delete task</button>
             </div>
         </div>
     </div>
 
-    <script type="module" src="scripts/app.js"></script>
     <script type="module" src="scripts/roadmaps.js"></script>
 </body>
 

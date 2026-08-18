@@ -6,4 +6,5 @@ data/
 *.db-shm
 .env
 .DS_Store
+desktop.ini
 npm-debug.log*

@@ -42,7 +42,9 @@ router.get('/', (req, res) => {
 // POST /api/roadmaps/:id/access — grant a user editor/viewer access by username.
 router.post('/', (req, res) => {
   const roadmapId = Number(req.params.id);
-  const { username, role } = req.body || {};
+  // Members are editors by default: everyone a roadmap is shared with can
+  // work on its tasks. 'viewer' is still accepted for read-only access.
+  const { username, role = 'editor' } = req.body || {};
 
   if (!username || typeof username !== 'string') {
     return res.status(400).json({ error: 'Username is required' });

@@ -9,81 +9,79 @@
     <link rel="stylesheet" href="styles/roadmap.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-lion-32.png">
 </head>
 
-<body>
+<body class="sky-body">
 
-    <div class="board-shell">
-
-        <!-- Top bar -->
-        <header class="topbar">
-            <div class="topbar-left">
-                <div class="board-title">
-                    <h2 id="roadmap-title">Loading…</h2>
-                    <p class="roadmap-meta"></p>
-                </div>
+    <header class="topbar">
+        <div class="topbar-left">
+            <div class="board-title">
+                <h1 id="roadmap-title">Loading&hellip;</h1>
+                <p class="roadmap-meta" id="roadmap-meta"></p>
             </div>
-            <div class="header-right">
-                <span class="brand">Kivo</span>
-            </div>
-        </header>
-
-        <div class="board-container" id="board-container">
-
-            <div class="board-column" data-column="planned">
-                <div class="column-header">
-                    <div class="column-heading">
-                        <span class="column-dot"></span>
-                        <h3 class="column-title">Planned</h3>
-                    </div>
-                    <span class="column-count">0</span>
-                </div>
-                <div class="tasks-list" id="tasks-planned"></div>
-            </div>
-
-            <div class="board-column" data-column="in_progress">
-                <div class="column-header">
-                    <div class="column-heading">
-                        <span class="column-dot"></span>
-                        <h3 class="column-title">In Progress</h3>
-                    </div>
-                    <span class="column-count">0</span>
-                </div>
-                <div class="tasks-list" id="tasks-in_progress"></div>
-            </div>
-
-            <div class="board-column" data-column="testing">
-                <div class="column-header">
-                    <div class="column-heading">
-                        <span class="column-dot"></span>
-                        <h3 class="column-title">Testing</h3>
-                    </div>
-                    <span class="column-count">0</span>
-                </div>
-                <div class="tasks-list" id="tasks-testing"></div>
-            </div>
-
-            <div class="board-column" data-column="released">
-                <div class="column-header">
-                    <div class="column-heading">
-                        <span class="column-dot"></span>
-                        <h3 class="column-title">Released</h3>
-                    </div>
-                    <span class="column-count">0</span>
-                </div>
-                <div class="tasks-list" id="tasks-released"></div>
-            </div>
-
         </div>
-
-        <!-- Shown when the token is invalid/disabled -->
-        <div id="unavailable" class="public-unavailable" style="display:none;">
-            <h2>This roadmap isn't available</h2>
-            <p>The link may be disabled or incorrect.</p>
+        <div class="topbar-right">
+            <span class="brand">Kivo<span class="brand-dot">.</span></span>
         </div>
+    </header>
 
+    <main class="page" id="board-container">
+
+        <section class="status-section" data-status="planned">
+            <div class="section-header">
+                <span class="section-dot planned"></span>
+                <h2>Planned</h2>
+                <span class="section-count" id="count-planned">0</span>
+            </div>
+            <div class="task-rows" id="rows-planned"></div>
+            <p class="section-empty" id="empty-planned">Nothing planned yet.</p>
+        </section>
+
+        <section class="status-section" data-status="in_progress">
+            <div class="section-header">
+                <span class="section-dot in_progress"></span>
+                <h2>In progress</h2>
+                <span class="section-count" id="count-in_progress">0</span>
+            </div>
+            <div class="task-rows" id="rows-in_progress"></div>
+            <p class="section-empty" id="empty-in_progress">Nothing is being worked on right now.</p>
+        </section>
+
+        <section class="status-section" data-status="finished">
+            <div class="section-header">
+                <span class="section-dot finished"></span>
+                <h2>Finished</h2>
+                <span class="section-count" id="count-finished">0</span>
+            </div>
+            <div class="task-rows" id="rows-finished"></div>
+            <p class="section-empty" id="empty-finished">Nothing finished yet.</p>
+        </section>
+
+    </main>
+
+    <!-- Shown when the token is invalid/disabled -->
+    <div id="unavailable" class="public-unavailable" style="display:none;">
+        <h2>This roadmap isn't available</h2>
+        <p>The link may be disabled or incorrect.</p>
+    </div>
+
+    <!-- Read-only task details modal -->
+    <div id="task-modal" class="modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-task-title"></h3>
+                <button id="close-task-modal" class="btn-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="delete-warning" id="modal-task-desc"></p>
+                <div class="task-tags" id="modal-task-tags" style="display:flex;gap:0.35rem;flex-wrap:wrap;margin:1rem 0;"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="close-task-btn" class="btn-ghost">Close</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="scripts/public.js"></script>

@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
+const bcrypt = require('bcryptjs');
 
 // Resolve the data directory relative to the project root (one level up from /server)
 const dataDir = path.join(__dirname, '..', 'data');
@@ -21,6 +22,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    is_admin INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -37,9 +39,10 @@ db.exec(`
     roadmap_id INTEGER NOT NULL REFERENCES roadmaps(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT DEFAULT '',
-    column TEXT NOT NULL CHECK(column IN ('planned', 'in_progress', 'testing', 'released')),
+    status TEXT NOT NULL CHECK(status IN ('planned', 'in_progress', 'finished')),
     position INTEGER DEFAULT 0,
     tags TEXT DEFAULT '[]',
+    assignees TEXT DEFAULT '[]',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -55,9 +58,16 @@ db.exec(`
 `);
 
 // --- Migrations ---
+
+// users.is_admin: admin status now lives in the database instead of an env var.
+const userCols = db.prepare('PRAGMA table_info(users)').all();
+if (!userCols.some((c) => c.name === 'is_admin')) {
+  db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0');
+}
+
 // public_token: when set, the roadmap is viewable read-only by anyone holding
 // the token (no login). NULL = not publicly shared.
-const roadmapCols = db.prepare("PRAGMA table_info(roadmaps)").all();
+const roadmapCols = db.prepare('PRAGMA table_info(roadmaps)').all();
 if (!roadmapCols.some((c) => c.name === 'public_token')) {
   db.exec('ALTER TABLE roadmaps ADD COLUMN public_token TEXT');
 }
@@ -69,46 +79,78 @@ if (!roadmapCols.some((c) => c.name === 'last_viewed_at')) {
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_roadmaps_public ON roadmaps(public_token)');
 
-// Column-model migration: the board used to be todo/doing/done. It is now
-// planned/in_progress/testing/released. SQLite can't ALTER a CHECK constraint,
-// so if an old-style tasks table is detected, rebuild it and remap values.
-const tasksSchema = db
-  .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'")
-  .get();
-
-if (tasksSchema && /'todo'/.test(tasksSchema.sql)) {
+// Status-model migration: the board used to be a kanban with a "column" field
+// (todo/doing/done, later planned/in_progress/testing/released). Tasks now have
+// a plain status: planned, in_progress or finished. SQLite can't ALTER a CHECK
+// constraint, so an old-style table is rebuilt and its values remapped.
+const taskCols = db.prepare('PRAGMA table_info(tasks)').all();
+if (taskCols.length && !taskCols.some((c) => c.name === 'status')) {
   db.pragma('foreign_keys = OFF');
-  const migrateColumns = db.transaction(() => {
+  const migrateStatus = db.transaction(() => {
     db.exec(`
       CREATE TABLE tasks_new (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         roadmap_id INTEGER NOT NULL REFERENCES roadmaps(id) ON DELETE CASCADE,
         title TEXT NOT NULL,
         description TEXT DEFAULT '',
-        column TEXT NOT NULL CHECK(column IN ('planned', 'in_progress', 'testing', 'released')),
+        status TEXT NOT NULL CHECK(status IN ('planned', 'in_progress', 'finished')),
         position INTEGER DEFAULT 0,
         tags TEXT DEFAULT '[]',
+        assignees TEXT DEFAULT '[]',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
     db.exec(`
-      INSERT INTO tasks_new (id, roadmap_id, title, description, "column", position, tags, created_at)
+      INSERT INTO tasks_new (id, roadmap_id, title, description, status, position, tags, assignees, created_at)
       SELECT id, roadmap_id, title, description,
         CASE "column"
           WHEN 'todo' THEN 'planned'
+          WHEN 'planned' THEN 'planned'
           WHEN 'doing' THEN 'in_progress'
-          WHEN 'done' THEN 'released'
-          ELSE "column"
+          WHEN 'in_progress' THEN 'in_progress'
+          WHEN 'testing' THEN 'in_progress'
+          ELSE 'finished'
         END,
-        position, tags, created_at
+        position, tags, '[]', created_at
       FROM tasks;
     `);
     db.exec('DROP TABLE tasks;');
     db.exec('ALTER TABLE tasks_new RENAME TO tasks;');
   });
-  migrateColumns();
+  migrateStatus();
   db.pragma('foreign_keys = ON');
   db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_roadmap ON tasks(roadmap_id)');
+} else if (taskCols.length && !taskCols.some((c) => c.name === 'assignees')) {
+  db.exec("ALTER TABLE tasks ADD COLUMN assignees TEXT DEFAULT '[]'");
+}
+
+// --- Admin seeding ---
+// Grant admin status to the usernames in ADMIN_USERNAMES (default: 81hp_).
+const seedAdmins = (process.env.ADMIN_USERNAMES || '81hp_')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const grantAdmin = db.prepare(
+  'UPDATE users SET is_admin = 1 WHERE lower(username) = lower(?)'
+);
+for (const name of seedAdmins) {
+  grantAdmin.run(name);
+}
+
+// Bootstrap: a fresh database has no accounts and sign-up does not exist, so
+// create the first admin account. Password comes from BOOTSTRAP_ADMIN_PASSWORD.
+const userCount = db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
+if (userCount === 0) {
+  const username = seedAdmins[0] || '81hp_';
+  const password = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'change-me-now';
+  const hash = bcrypt.hashSync(password, 12);
+  db.prepare(
+    'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, 1)'
+  ).run(username, hash);
+  console.log(
+    `Created bootstrap admin account "${username}". Log in and change the password right away.`
+  );
 }
 
 module.exports = db;

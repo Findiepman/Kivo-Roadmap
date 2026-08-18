@@ -1,86 +1,68 @@
-/* Login page — uses theme.css tokens + shared form/button styles. */
+/* Sign-in page — one white card floating in a baby blue sky. */
 
 .auth-body {
-    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    min-height: 100vh;
+    padding: 1.5rem;
     background:
-        radial-gradient(55rem 40rem at 50% -5%, rgba(124, 107, 255, 0.16), transparent 60%),
-        radial-gradient(45rem 35rem at 80% 110%, rgba(200, 80, 232, 0.1), transparent 55%),
-        var(--bg);
+        radial-gradient(800px 500px at 15% 0%, rgba(191, 224, 247, 0.9), transparent 60%),
+        radial-gradient(700px 450px at 90% 20%, rgba(191, 224, 247, 0.65), transparent 60%),
+        radial-gradient(600px 400px at 50% 110%, rgba(191, 224, 247, 0.5), transparent 65%),
+        var(--paper);
 }
 
 .auth-card {
     width: 100%;
-    max-width: 410px;
-    background: linear-gradient(180deg, var(--surface-2), var(--surface));
-    border: 1px solid var(--border-2);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 2.75rem 2.25rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.auth-card::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 3px;
-    background: var(--brand-grad);
+    max-width: 400px;
+    background: var(--cloud);
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    box-shadow: var(--shadow-lift);
+    padding: 2.5rem 2.25rem 2rem;
+    text-align: center;
 }
 
 .auth-logo {
-    font-size: 2rem;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    text-align: center;
-    margin-bottom: 1.75rem;
-    background: var(--brand-grad);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.6rem;
+}
+
+.auth-logo .brand-dot {
+    color: var(--sky);
 }
 
 .auth-title {
-    font-size: 1.55rem;
+    font-family: var(--font-display);
+    font-size: 1.75rem;
     font-weight: 800;
-    color: #fff;
-    text-align: center;
     letter-spacing: -0.02em;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.35rem;
 }
 
 .auth-subtitle {
-    font-size: 0.92rem;
-    color: var(--text-muted);
-    text-align: center;
-    margin-bottom: 2rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    margin-bottom: 1.8rem;
 }
 
-.auth-form .form-group { margin-bottom: 1.2rem; }
+.auth-form {
+    text-align: left;
+}
 
-.auth-submit { width: 100%; margin-top: 0.5rem; padding: 0.92rem; font-size: 1rem; }
+.auth-submit {
+    width: 100%;
+    margin-top: 0.4rem;
+    padding: 0.8rem;
+    font-size: 1rem;
+}
 
-.auth-toggle {
-    text-align: center;
+.auth-note {
     margin-top: 1.5rem;
-    font-size: 0.9rem;
-    color: var(--text-muted);
+    font-size: 0.84rem;
+    color: var(--ink-soft);
 }
-
-.auth-link {
-    background: none;
-    border: none;
-    color: var(--brand-solid);
-    font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
-    font-family: inherit;
-    padding: 0;
-    margin-left: 0.3rem;
-}
-
-.auth-link:hover { color: #b3a8ff; text-decoration: underline; }

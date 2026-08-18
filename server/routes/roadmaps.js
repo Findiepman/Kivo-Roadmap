@@ -25,22 +25,34 @@ router.get('/', (req, res) => {
     )
     .all({ userId });
 
-  // Attach per-column task counts so the dashboard can show progress.
+  // Attach per-status task counts and member counts for the dashboard.
   if (rows.length) {
     const ids = rows.map((r) => r.id);
     const placeholders = ids.map(() => '?').join(',');
     const countRows = db
       .prepare(
-        `SELECT roadmap_id, "column" AS col, COUNT(*) AS c
+        `SELECT roadmap_id, status, COUNT(*) AS c
          FROM tasks WHERE roadmap_id IN (${placeholders})
-         GROUP BY roadmap_id, "column"`
+         GROUP BY roadmap_id, status`
+      )
+      .all(...ids);
+
+    const memberRows = db
+      .prepare(
+        `SELECT roadmap_id, COUNT(*) AS c FROM roadmap_access
+         WHERE roadmap_id IN (${placeholders})
+         GROUP BY roadmap_id`
       )
       .all(...ids);
 
     const byRoadmap = {};
     for (const cr of countRows) {
       if (!byRoadmap[cr.roadmap_id]) byRoadmap[cr.roadmap_id] = {};
-      byRoadmap[cr.roadmap_id][cr.col] = cr.c;
+      byRoadmap[cr.roadmap_id][cr.status] = cr.c;
+    }
+    const membersByRoadmap = {};
+    for (const mr of memberRows) {
+      membersByRoadmap[mr.roadmap_id] = mr.c;
     }
 
     for (const r of rows) {
@@ -48,20 +60,20 @@ router.get('/', (req, res) => {
       r.counts = {
         planned: c.planned || 0,
         in_progress: c.in_progress || 0,
-        testing: c.testing || 0,
-        released: c.released || 0,
-        total: (c.planned || 0) + (c.in_progress || 0) + (c.testing || 0) + (c.released || 0),
+        finished: c.finished || 0,
+        total: (c.planned || 0) + (c.in_progress || 0) + (c.finished || 0),
       };
+      // owner + shared users
+      r.memberCount = 1 + (membersByRoadmap[r.id] || 0);
     }
   }
 
   res.json(rows);
 });
 
-// POST /api/roadmaps — create a roadmap owned by the current user.
-// Restricted to admin accounts (ADMIN_USERNAMES) when that is configured.
+// POST /api/roadmaps — create a roadmap owned by the current user. Admins only.
 router.post('/', (req, res) => {
-  if (!isAdmin(req.user.username)) {
+  if (!isAdmin(req.user.userId)) {
     return res.status(403).json({ error: 'Your account is not allowed to create roadmaps' });
   }
 
@@ -96,6 +108,29 @@ router.get('/:id', (req, res) => {
     .get(id);
 
   res.json({ ...roadmap, role });
+});
+
+// GET /api/roadmaps/:id/members — owner + everyone the roadmap is shared with.
+// Any member may read this (needed for the assignee picker on tasks).
+router.get('/:id/members', (req, res) => {
+  const id = Number(req.params.id);
+  const role = getRole(id, req.user.userId);
+  if (!role) return res.status(404).json({ error: 'Roadmap not found' });
+
+  const rows = db
+    .prepare(
+      `SELECT u.id, u.username, 'owner' AS role, 0 AS sort_order
+       FROM users u JOIN roadmaps r ON r.owner_id = u.id
+       WHERE r.id = @id
+       UNION ALL
+       SELECT u.id, u.username, ra.role AS role, 1 AS sort_order
+       FROM users u JOIN roadmap_access ra ON ra.user_id = u.id
+       WHERE ra.roadmap_id = @id
+       ORDER BY sort_order ASC, username ASC`
+    )
+    .all({ id });
+
+  res.json(rows.map(({ id: userId, username, role }) => ({ id: userId, username, role })));
 });
 
 // PUT /api/roadmaps/:id — owner only.

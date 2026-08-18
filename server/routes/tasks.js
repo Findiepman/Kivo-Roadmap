@@ -8,10 +8,11 @@ const router = express.Router({ mergeParams: true });
 
 router.use(auth);
 
-const COLUMNS = ['planned', 'in_progress', 'testing', 'released'];
+const STATUSES = ['planned', 'in_progress', 'finished'];
 
-// Serialize a DB row into the API shape, parsing tags from JSON.
-function serializeTask(row) {
+// Serialize a DB row into the API shape, parsing tags and resolving assignee
+// user ids to usernames.
+function serializeTask(row, usersById) {
   let tags = [];
   try {
     const parsed = JSON.parse(row.tags);
@@ -19,21 +20,34 @@ function serializeTask(row) {
   } catch (_) {
     tags = [];
   }
+
+  let assigneeIds = [];
+  try {
+    const parsed = JSON.parse(row.assignees);
+    if (Array.isArray(parsed)) assigneeIds = parsed;
+  } catch (_) {
+    assigneeIds = [];
+  }
+
+  const assignees = assigneeIds
+    .map((uid) => usersById.get(Number(uid)))
+    .filter(Boolean);
+
   return {
     id: row.id,
     roadmap_id: row.roadmap_id,
     title: row.title,
     description: row.description,
-    column: row.column,
+    status: row.status,
     position: row.position,
     tags,
+    assignees, // [{ id, username }]
     created_at: row.created_at,
   };
 }
 
 function normalizeTags(tags) {
   if (!Array.isArray(tags)) return '[]';
-  // Keep only string entries, trimmed and non-empty.
   const clean = tags
     .filter((t) => typeof t === 'string')
     .map((t) => t.trim())
@@ -41,20 +55,50 @@ function normalizeTags(tags) {
   return JSON.stringify(clean);
 }
 
+// Roadmap members = owner + everyone with an access row. Assignees are
+// validated against this set so a task can only be assigned to members.
+function getMemberMap(roadmapId) {
+  const rows = db
+    .prepare(
+      `SELECT u.id, u.username FROM users u
+       JOIN roadmaps r ON r.owner_id = u.id AND r.id = @roadmapId
+       UNION
+       SELECT u.id, u.username FROM users u
+       JOIN roadmap_access ra ON ra.user_id = u.id AND ra.roadmap_id = @roadmapId`
+    )
+    .all({ roadmapId });
+  return new Map(rows.map((r) => [r.id, { id: r.id, username: r.username }]));
+}
+
+function normalizeAssignees(assignees, memberMap) {
+  if (!Array.isArray(assignees)) return '[]';
+  const clean = [];
+  for (const a of assignees) {
+    const uid = Number(a);
+    if (Number.isInteger(uid) && memberMap.has(uid) && !clean.includes(uid)) {
+      clean.push(uid);
+    }
+  }
+  return JSON.stringify(clean);
+}
+
+const TASK_FIELDS =
+  'id, roadmap_id, title, description, status, position, tags, assignees, created_at';
+
 // GET /api/roadmaps/:id/tasks — any access level may read.
 router.get('/', (req, res) => {
   const roadmapId = Number(req.params.id);
   const role = getRole(roadmapId, req.user.userId);
   if (!role) return res.status(404).json({ error: 'Roadmap not found' });
 
+  const usersById = getMemberMap(roadmapId);
   const rows = db
     .prepare(
-      'SELECT id, roadmap_id, title, description, "column", position, tags, created_at ' +
-        'FROM tasks WHERE roadmap_id = ? ORDER BY "column", position ASC, id ASC'
+      `SELECT ${TASK_FIELDS} FROM tasks WHERE roadmap_id = ? ORDER BY status, position ASC, id ASC`
     )
     .all(roadmapId);
 
-  res.json(rows.map(serializeTask));
+  res.json(rows.map((r) => serializeTask(r, usersById)));
 });
 
 // POST /api/roadmaps/:id/tasks — owner or editor.
@@ -66,75 +110,44 @@ router.post('/', (req, res) => {
     return res.status(403).json({ error: 'You do not have permission to add tasks' });
   }
 
-  const { title, description, column, tags } = req.body || {};
+  const { title, description, status, tags, assignees } = req.body || {};
 
   if (!title || typeof title !== 'string' || !title.trim()) {
-    return res.status(400).json({ error: 'Task title is required' });
+    return res.status(400).json({ error: 'Task name is required' });
   }
-  const col = COLUMNS.includes(column) ? column : 'planned';
+  const st = STATUSES.includes(status) ? status : 'planned';
+  const usersById = getMemberMap(roadmapId);
 
-  // New task goes to the bottom of its column.
+  // New task goes to the bottom of its status group.
   const maxRow = db
-    .prepare('SELECT MAX(position) AS maxPos FROM tasks WHERE roadmap_id = ? AND "column" = ?')
-    .get(roadmapId, col);
+    .prepare('SELECT MAX(position) AS maxPos FROM tasks WHERE roadmap_id = ? AND status = ?')
+    .get(roadmapId, st);
   const position = (maxRow && maxRow.maxPos != null ? maxRow.maxPos : -1) + 1;
 
   const result = db
     .prepare(
-      'INSERT INTO tasks (roadmap_id, title, description, "column", position, tags) ' +
-        'VALUES (?, ?, ?, ?, ?, ?)'
+      'INSERT INTO tasks (roadmap_id, title, description, status, position, tags, assignees) ' +
+        'VALUES (?, ?, ?, ?, ?, ?, ?)'
     )
-    .run(roadmapId, title.trim(), (description || '').toString(), col, position, normalizeTags(tags));
+    .run(
+      roadmapId,
+      title.trim(),
+      (description || '').toString(),
+      st,
+      position,
+      normalizeTags(tags),
+      normalizeAssignees(assignees, usersById)
+    );
 
   const row = db
-    .prepare(
-      'SELECT id, roadmap_id, title, description, "column", position, tags, created_at FROM tasks WHERE id = ?'
-    )
+    .prepare(`SELECT ${TASK_FIELDS} FROM tasks WHERE id = ?`)
     .get(result.lastInsertRowid);
 
-  res.status(201).json(serializeTask(row));
+  res.status(201).json(serializeTask(row, usersById));
 });
 
-// PUT /api/roadmaps/:id/tasks/reorder — bulk position/column update after drag & drop.
-// Declared BEFORE /:taskId so "reorder" isn't captured as a task id.
-router.put('/reorder', (req, res) => {
-  const roadmapId = Number(req.params.id);
-  const role = getRole(roadmapId, req.user.userId);
-  if (!role) return res.status(404).json({ error: 'Roadmap not found' });
-  if (!canWrite(role)) {
-    return res.status(403).json({ error: 'You do not have permission to reorder tasks' });
-  }
-
-  const { tasks } = req.body || {};
-  if (!Array.isArray(tasks)) {
-    return res.status(400).json({ error: 'tasks must be an array' });
-  }
-
-  const update = db.prepare(
-    'UPDATE tasks SET "column" = ?, position = ? WHERE id = ? AND roadmap_id = ?'
-  );
-
-  const applyAll = db.transaction((items) => {
-    for (const t of items) {
-      if (!t || typeof t.id === 'undefined') continue;
-      if (!COLUMNS.includes(t.column)) continue;
-      update.run(t.column, Number(t.position) || 0, Number(t.id), roadmapId);
-    }
-  });
-
-  applyAll(tasks);
-
-  const rows = db
-    .prepare(
-      'SELECT id, roadmap_id, title, description, "column", position, tags, created_at ' +
-        'FROM tasks WHERE roadmap_id = ? ORDER BY "column", position ASC, id ASC'
-    )
-    .all(roadmapId);
-
-  res.json(rows.map(serializeTask));
-});
-
-// PUT /api/roadmaps/:id/tasks/:taskId — owner or editor.
+// PUT /api/roadmaps/:id/tasks/:taskId — owner or editor. Every aspect of a
+// task is editable: name, description, status, tags and assignees.
 router.put('/:taskId', (req, res) => {
   const roadmapId = Number(req.params.id);
   const taskId = Number(req.params.taskId);
@@ -149,28 +162,34 @@ router.put('/:taskId', (req, res) => {
     .get(taskId, roadmapId);
   if (!existing) return res.status(404).json({ error: 'Task not found' });
 
-  const { title, description, column, position, tags } = req.body || {};
+  const { title, description, status, tags, assignees } = req.body || {};
+  const usersById = getMemberMap(roadmapId);
 
   const newTitle =
     typeof title === 'string' && title.trim() ? title.trim() : existing.title;
   const newDesc =
     typeof description === 'string' ? description : existing.description;
-  const newColumn = COLUMNS.includes(column) ? column : existing.column;
-  const newPosition =
-    typeof position === 'number' ? position : existing.position;
+  const newStatus = STATUSES.includes(status) ? status : existing.status;
   const newTags = Array.isArray(tags) ? normalizeTags(tags) : existing.tags;
+  const newAssignees = Array.isArray(assignees)
+    ? normalizeAssignees(assignees, usersById)
+    : existing.assignees;
+
+  // Moving to a different status: append to the bottom of that group.
+  let newPosition = existing.position;
+  if (newStatus !== existing.status) {
+    const maxRow = db
+      .prepare('SELECT MAX(position) AS maxPos FROM tasks WHERE roadmap_id = ? AND status = ?')
+      .get(roadmapId, newStatus);
+    newPosition = (maxRow && maxRow.maxPos != null ? maxRow.maxPos : -1) + 1;
+  }
 
   db.prepare(
-    'UPDATE tasks SET title = ?, description = ?, "column" = ?, position = ?, tags = ? WHERE id = ?'
-  ).run(newTitle, newDesc, newColumn, newPosition, newTags, taskId);
+    'UPDATE tasks SET title = ?, description = ?, status = ?, position = ?, tags = ?, assignees = ? WHERE id = ?'
+  ).run(newTitle, newDesc, newStatus, newPosition, newTags, newAssignees, taskId);
 
-  const row = db
-    .prepare(
-      'SELECT id, roadmap_id, title, description, "column", position, tags, created_at FROM tasks WHERE id = ?'
-    )
-    .get(taskId);
-
-  res.json(serializeTask(row));
+  const row = db.prepare(`SELECT ${TASK_FIELDS} FROM tasks WHERE id = ?`).get(taskId);
+  res.json(serializeTask(row, usersById));
 });
 
 // DELETE /api/roadmaps/:id/tasks/:taskId — owner or editor.

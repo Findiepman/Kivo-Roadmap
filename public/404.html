@@ -7,8 +7,8 @@
     <title>404 - Kivo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Instrument+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-lion-32.png">
     <style>
         * {
             margin: 0;
@@ -17,9 +17,12 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%);
-            color: #ffffff;
+            font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background:
+                radial-gradient(800px 500px at 15% 0%, rgba(191, 224, 247, 0.9), transparent 60%),
+                radial-gradient(700px 450px at 90% 20%, rgba(191, 224, 247, 0.65), transparent 60%),
+                #f2f8fe;
+            color: #12324e;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -33,56 +36,55 @@
         }
 
         .error-code {
-            font-size: 10rem;
-            font-weight: 900;
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 9rem;
+            font-weight: 800;
             line-height: 1;
             letter-spacing: -0.05em;
-            background: linear-gradient(135deg, #3b82f6, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #bfe0f7;
             margin-bottom: 1rem;
         }
 
         h1 {
-            font-size: 2.5rem;
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 2.3rem;
             font-weight: 800;
             margin-bottom: 1rem;
             letter-spacing: -0.02em;
         }
 
         p {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 3rem;
+            font-size: 1.1rem;
+            color: #557595;
+            margin-bottom: 2.5rem;
             line-height: 1.6;
         }
 
         .btn {
             display: inline-block;
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            background: #1b6fb8;
             color: white;
-            padding: 1rem 2.5rem;
-            border-radius: 10px;
+            padding: 0.9rem 2.4rem;
+            border-radius: 999px;
             font-weight: 700;
-            font-size: 1.05rem;
+            font-size: 1rem;
             text-decoration: none;
             transition: all 0.2s;
-            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 24px rgba(27, 111, 184, 0.25);
         }
 
         .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+            background: #155a97;
         }
 
         @media (max-width: 600px) {
             .error-code {
-                font-size: 6rem;
+                font-size: 5.5rem;
             }
 
             h1 {
-                font-size: 1.8rem;
+                font-size: 1.7rem;
             }
 
             p {
@@ -97,7 +99,7 @@
         <div class="error-code">404</div>
         <h1>Page not found</h1>
         <p>This page doesn't exist. Maybe it got deleted, or maybe you took a wrong turn.</p>
-        <a href="dashboard.html" class="btn">Go Home</a>
+        <a href="dashboard.html" class="btn">Back to your roadmaps</a>
     </div>
 </body>
 

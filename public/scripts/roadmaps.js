@@ -1,5 +1,4 @@
-import { state } from "./state.js";
-import { tasksToColumns, tagColorClass, COLUMN_KEYS } from "./storage.js";
+import { tasksToGroups, tagColorClass, STATUS_KEYS, STATUS_LABELS } from "./storage.js";
 import { api } from "./api.js";
 
 // "Economy, Mining" -> ["Economy", "Mining"]
@@ -10,67 +9,48 @@ function parseTags(value) {
         .filter(Boolean);
 }
 
-// ===== DOM ELEMENTEN =====
-const roadMapTitle = document.getElementById("roadmap-title"); // titel van de roadmap
-const taskModal = document.getElementById("create-task-modal"); // taak modal
-const cancelTaskBtn = document.getElementById("cancel-task-btn"); // annuleren knop
-const createTaskBtn = document.getElementById("create-task-btn"); // aanmaken knop
-const closeTaskModal = document.getElementById("close-task-modal"); // sluit knop modal
-const taskName = document.getElementById("task-name"); // input taak naam
-const taskDesc = document.getElementById("task-desc"); // input taak beschrijving
-const taskTags = document.getElementById("task-tags"); // input taak tags (comma separated)
-const customSelect = document.getElementById("task-column"); // select dropdown
-const selected = customSelect.querySelector(".selected"); // geselecteerde value
-const deleteTaskModal = document.getElementById("delete-task-modal"); // delete task modal
-const closeDeleteTaskBtn = document.getElementById("close-delete-task-modal"); // sluit knop
-const cancelDeleteTaskBtn = document.getElementById("cancel-delete-task-btn"); // annuleer knop
-const confirmDeleteTaskBtn = document.getElementById("confirm-delete-task-btn"); // confirm delete knop
+// ===== DOM =====
+const roadmapTitle = document.getElementById("roadmap-title");
+const roadmapMeta = document.getElementById("roadmap-meta");
+const memberStack = document.getElementById("member-stack");
+const addTaskBtn = document.getElementById("add-task-btn");
 
-// rename modal
-const renameModal = document.getElementById("rename-modal");
-const renameName = document.getElementById("rename-roadmap-name");
-const renameDesc = document.getElementById("rename-roadmap-description");
-const renameTags = document.getElementById("rename-task-tags");
-const renameBtn = document.getElementById("rename-btn");
-const cancelRenameBtn = document.getElementById("cancel-rename-btn");
-const closeRenameBtn = document.getElementById("close-rename-modal");
+// task modal
+const taskModal = document.getElementById("task-modal");
+const taskModalTitle = document.getElementById("task-modal-title");
+const closeTaskModalBtn = document.getElementById("close-task-modal");
+const cancelTaskBtn = document.getElementById("cancel-task-btn");
+const saveTaskBtn = document.getElementById("save-task-btn");
+const deleteTaskBtn = document.getElementById("delete-task-btn");
+const taskName = document.getElementById("task-name");
+const taskDesc = document.getElementById("task-desc");
+const taskTags = document.getElementById("task-tags");
+const taskError = document.getElementById("task-error");
+const statusSeg = document.getElementById("task-status-seg");
+const assigneesGroup = document.getElementById("assignees-group");
+const assigneePicker = document.getElementById("task-assignees");
 
-// ===== STATE VARIABELEN =====
-let taskToDeleteId = null; // taak id voor delete
-let taskToDeleteColumn = null; // kolom van taak voor delete
-let roadmap = null; // huidige roadmap
-let selectedValue = "planned"; // default column
-let taskToRenameId = null;
-let taskToRenameColumn = null;
-const options = customSelect.querySelectorAll(".options li"); // dropdown opties
+// delete confirmation modal
+const deleteTaskModal = document.getElementById("delete-task-modal");
+const closeDeleteTaskBtn = document.getElementById("close-delete-task-modal");
+const cancelDeleteTaskBtn = document.getElementById("cancel-delete-task-btn");
+const confirmDeleteTaskBtn = document.getElementById("confirm-delete-task-btn");
 
-// alleen owners en editors mogen wijzigen; viewers zijn read-only
+// ===== STATE =====
+let roadmap = null;      // { id, name, desc, role, groups }
+let members = [];        // [{ id, username, role }]
+let editingTaskId = null; // null = the modal is creating a new task
+let modalStatus = "planned";
+let taskToDeleteId = null;
+
 function canEdit() {
     return roadmap && (roadmap.role === "owner" || roadmap.role === "editor");
 }
 
-// ===== DROPDOWN LOGICA =====
-selected.addEventListener("click", () => {
-    customSelect.classList.add("open"); // open dropdown
-});
+function openModal(m) { m.classList.add("open"); }
+function closeModal(m) { m.classList.remove("open"); }
 
-// kies optie
-options.forEach(option => {
-    option.addEventListener("click", () => {
-        selected.textContent = option.textContent; // update text
-        selectedValue = option.getAttribute("data-value"); // update waarde
-        customSelect.classList.remove("open"); // sluit dropdown
-    });
-});
-
-// sluit dropdown bij klik buiten
-document.addEventListener("click", (e) => {
-    if (!customSelect.contains(e.target)) {
-        customSelect.classList.remove("open");
-    }
-});
-
-// ===== INIT ROADMAP PAGINA =====
+// ===== INIT =====
 async function initRoadmapPage() {
     const params = new URLSearchParams(window.location.search);
     const idParam = params.get("id");
@@ -81,407 +61,349 @@ async function initRoadmapPage() {
         return;
     }
 
-    // sessie check; bij 401 stuurt api ons al naar de login
     let meta;
     try {
         meta = await api.getRoadmap(roadmapId);
     } catch (err) {
-        // 404 of geen toegang
         window.location.href = "404.html";
         return;
     }
-    if (!meta) return;
+    if (!meta) return; // 401 redirect already underway
 
-    let tasks = [];
-    try {
-        tasks = await api.getTasks(roadmapId);
-    } catch (err) {
-        tasks = [];
-    }
+    const [tasks, memberList] = await Promise.all([
+        api.getTasks(roadmapId).catch(() => []),
+        api.getMembers(roadmapId).catch(() => [])
+    ]);
 
     roadmap = {
         id: meta.id,
         name: meta.title,
         desc: meta.description || "",
         role: meta.role,
-        columns: tasksToColumns(tasks)
+        groups: tasksToGroups(tasks)
     };
-    state.roadmap = roadmap;
+    members = memberList || [];
 
     applyRoleUI();
+    renderHeader();
     renderTasks();
 }
 
-// pagina load
-initRoadmapPage();
-
-// ===== ROL-GEBASEERDE UI =====
 function applyRoleUI() {
     if (canEdit()) return;
-
-    // viewer: verberg alle "Add Task" knoppen
-    document.querySelectorAll(".btn-add-task").forEach(btn => {
-        btn.style.display = "none";
-    });
-
-    // read-only badge in de header tonen
-    const headerRight = document.querySelector(".header-right");
-    if (headerRight && !document.querySelector(".read-only-badge")) {
+    addTaskBtn.style.display = "none";
+    const right = document.querySelector(".topbar-right");
+    if (right && !document.querySelector(".read-only-badge")) {
         const badge = document.createElement("span");
         badge.className = "read-only-badge";
-        badge.textContent = "Viewing (read-only)";
-        headerRight.appendChild(badge);
+        badge.textContent = "View only";
+        right.appendChild(badge);
     }
 }
 
-// ===== TASKS HERLADEN VAN SERVER =====
-async function reloadTasks() {
-    if (!roadmap) return;
-    const tasks = await api.getTasks(roadmap.id);
-    roadmap.columns = tasksToColumns(tasks);
-    renderTasks();
-}
+function renderHeader() {
+    roadmapTitle.textContent = roadmap.name;
+    document.title = `${roadmap.name} - Kivo`;
+    roadmapMeta.textContent = roadmap.desc;
 
-// ===== CREATE TASK =====
-async function createTask(column, text, title, tags) {
-    if (!roadmap || !canEdit()) return;
-    if (!COLUMN_KEYS.includes(column)) return; // check column
-    if (!title || !title.trim()) return;
-
-    await api.createTask(roadmap.id, {
-        title: title.trim(),
-        description: text || "",
-        column,
-        tags: Array.isArray(tags) ? tags : []
+    memberStack.innerHTML = "";
+    members.slice(0, 6).forEach(m => {
+        const a = document.createElement("span");
+        a.className = "avatar";
+        a.textContent = (m.username || "?").charAt(0);
+        a.title = m.username;
+        memberStack.appendChild(a);
     });
-
-    await reloadTasks();
-}
-
-// ===== DELETE TASK =====
-async function deleteTask(taskId, columnName) {
-    if (!roadmap || !canEdit()) return;
-    await api.deleteTask(roadmap.id, taskId);
-    await reloadTasks();
-}
-
-// ===== DELETE TASK MODAL =====
-function openDeleteTaskModal(taskId, columnName) {
-    taskToDeleteId = taskId;
-    taskToDeleteColumn = columnName;
-    deleteTaskModal.style.display = "flex"; // open modal
-}
-
-function closeDeleteTaskModal() {
-    deleteTaskModal.style.display = "none"; // sluit modal
-    taskToDeleteId = null;
-    taskToDeleteColumn = null;
-}
-
-closeDeleteTaskBtn.addEventListener("click", closeDeleteTaskModal);
-cancelDeleteTaskBtn.addEventListener("click", closeDeleteTaskModal);
-
-confirmDeleteTaskBtn.addEventListener("click", () => {
-    if (taskToDeleteId !== null && taskToDeleteColumn) {
-        deleteTask(taskToDeleteId, taskToDeleteColumn); // verwijder taak
+    if (members.length > 6) {
+        const more = document.createElement("span");
+        more.className = "avatar";
+        more.textContent = `+${members.length - 6}`;
+        memberStack.appendChild(more);
     }
-    closeDeleteTaskModal();
-});
+}
 
 // ===== RENDER TASKS =====
 function renderTasks() {
-    if (!roadmap) return;
+    STATUS_KEYS.forEach(status => {
+        const rows = document.getElementById(`rows-${status}`);
+        const empty = document.getElementById(`empty-${status}`);
+        const count = document.getElementById(`count-${status}`);
+        const tasks = roadmap.groups[status] || [];
 
-    const editable = canEdit();
+        rows.innerHTML = "";
+        count.textContent = tasks.length;
+        empty.style.display = tasks.length === 0 ? "block" : "none";
 
-    // update titel en description
-    roadMapTitle.textContent = roadmap.name;
-    document.querySelector(".roadmap-meta").textContent = roadmap.desc || "";
-
-    // loop kolommen
-    document.querySelectorAll(".board-column").forEach(columnDiv => {
-        const columnName = columnDiv.dataset.column;
-        const tasksList = columnDiv.querySelector(".tasks-list");
-
-        tasksList.innerHTML = ""; // clear tasks
-
-        // defensief: onbekende kolom (bv. stale cache) -> lege lijst
-        const colTasks = roadmap.columns[columnName] || [];
-
-        // render elke task
-        colTasks.forEach(task => {
-            const taskCard = document.createElement("div");
-            taskCard.className = "task-card";
-            if (editable) taskCard.setAttribute("draggable", "true");
-            taskCard.dataset.id = task.id;
-
-            const title = document.createElement("div");
-            title.className = "task-title";
-            title.textContent = task.title;
-
-            const desc = document.createElement("div");
-            desc.className = "task-description";
-            desc.textContent = task.text;
-
-            // tags (gekleurde pill badges) — alleen als de taak tags heeft
-            let tagsWrap = null;
-            if (Array.isArray(task.tags) && task.tags.length) {
-                tagsWrap = document.createElement("div");
-                tagsWrap.className = "task-tags";
-                task.tags.forEach(tag => {
-                    const pill = document.createElement("span");
-                    pill.className = "task-tag " + tagColorClass(tag);
-                    pill.textContent = tag;
-                    tagsWrap.appendChild(pill);
-                });
-            }
-
-            // 3-puntjes menu enkel voor editors/owners
-            let menuBtn = null;
-            let menu = null;
-            if (editable) {
-                menuBtn = document.createElement("button");
-                menuBtn.className = "roadmap-menu-btn";
-                menuBtn.textContent = "⋯";
-
-                menu = document.createElement("div");
-                menu.className = "roadmap-menu";
-
-                const renameItem = document.createElement("button");
-                const deleteItem = document.createElement("button");
-
-                renameItem.className = "menu-item";
-                deleteItem.className = "menu-item";
-
-                renameItem.textContent = "Rename";
-                deleteItem.textContent = "Delete";
-                deleteItem.style.color = "red";
-
-                menu.appendChild(renameItem);
-                menu.appendChild(deleteItem);
-
-                // delete via menu
-                deleteItem.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    openDeleteTaskModal(task.id, columnName);
-                    menu.classList.remove("open");
-                });
-
-                // rename via menu
-                renameItem.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    openRenameTaskModal(task.id, columnName);
-                    menu.classList.remove("open");
-                });
-
-                menuBtn.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    document.querySelectorAll(".roadmap-menu").forEach(m => {
-                        if (m !== menu) m.classList.remove("open");
-                    });
-                    menu.classList.toggle("open");
-                });
-
-                // drag events
-                taskCard.addEventListener("dragstart", dragStart);
-                taskCard.addEventListener("dragend", dragEnd);
-            }
-
-            // klik op de kaart: ctrl=delete, shift=rename (editors),
-            // gewone klik = beschrijving in/uitklappen (iedereen)
-            taskCard.addEventListener("click", (e) => {
-                if (editable && e.ctrlKey) {
-                    openDeleteTaskModal(task.id, columnName);
-                    return;
-                }
-                if (editable && e.shiftKey) {
-                    openRenameTaskModal(task.id, columnName);
-                    return;
-                }
-                taskCard.classList.toggle("expanded");
-            });
-
-            if (menu) taskCard.appendChild(menu);
-            taskCard.appendChild(title);
-            if (menuBtn) taskCard.appendChild(menuBtn);
-            taskCard.appendChild(desc);
-            if (tagsWrap) taskCard.appendChild(tagsWrap);
-            tasksList.appendChild(taskCard);
-        });
-
-        // update kolom count
-        const count = columnDiv.querySelector(".column-count");
-        count.textContent = colTasks.length;
-
-        // drag/drop events per kolom (alleen voor editors)
-        if (editable) {
-            tasksList.addEventListener("dragover", e => e.preventDefault());
-            tasksList.addEventListener("drop", e => {
-                e.preventDefault();
-                const cardId = e.dataTransfer.getData("text/plain");
-                moveTask(cardId, columnName);
-            });
-        }
-    });
-
-    // add task buttons (alleen editors zien deze; bij viewers zijn ze verborgen)
-    document.querySelectorAll(".btn-add-task").forEach(btn => {
-        btn.onclick = () => {
-            if (!canEdit()) return;
-            selectedValue = btn.parentElement.dataset.column;
-            taskModal.style.display = "flex"; // open create modal
-        };
+        tasks.forEach(task => rows.appendChild(buildTaskRow(task)));
     });
 }
 
-// menu sluiten bij klik buiten (één keer globaal)
+function buildTaskRow(task) {
+    const row = document.createElement("div");
+    row.className = `task-row ${task.status}`;
+    row.tabIndex = 0;
+    row.setAttribute("role", "button");
+    row.setAttribute("aria-label", `Open task ${task.title}`);
+
+    const name = document.createElement("span");
+    name.className = "task-name";
+    name.textContent = task.title;
+    row.appendChild(name);
+
+    if (task.tags.length) {
+        const tagsWrap = document.createElement("span");
+        tagsWrap.className = "task-tags";
+        task.tags.forEach(tag => {
+            const pill = document.createElement("span");
+            pill.className = "task-tag " + tagColorClass(tag);
+            pill.textContent = tag;
+            tagsWrap.appendChild(pill);
+        });
+        row.appendChild(tagsWrap);
+    }
+
+    const right = document.createElement("span");
+    right.className = "row-right";
+
+    // assignee avatars
+    if (task.assignees.length) {
+        const stack = document.createElement("span");
+        stack.className = "avatar-stack";
+        task.assignees.slice(0, 4).forEach(a => {
+            const av = document.createElement("span");
+            av.className = "avatar";
+            av.textContent = (a.username || "?").charAt(0);
+            av.title = a.username;
+            stack.appendChild(av);
+        });
+        right.appendChild(stack);
+    }
+
+    // status pill with a quick-change menu
+    const pillWrap = document.createElement("span");
+    pillWrap.className = "menu-wrap";
+
+    const pill = document.createElement("button");
+    pill.className = `status-pill status-${task.status}`;
+    pill.setAttribute("aria-label", `Change status of ${task.title}`);
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    pill.appendChild(dot);
+    pill.appendChild(document.createTextNode(STATUS_LABELS[task.status]));
+    pillWrap.appendChild(pill);
+
+    if (canEdit()) {
+        const menu = document.createElement("div");
+        menu.className = "menu status-menu";
+        STATUS_KEYS.forEach(status => {
+            const item = document.createElement("button");
+            item.className = "menu-item";
+            item.textContent = STATUS_LABELS[status];
+            if (status === task.status) item.style.fontWeight = "800";
+            item.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                menu.classList.remove("open");
+                if (status === task.status) return;
+                await api.updateTask(roadmap.id, task.id, { status });
+                await reloadTasks();
+            });
+            menu.appendChild(item);
+        });
+        pillWrap.appendChild(menu);
+
+        pill.addEventListener("click", (e) => {
+            e.stopPropagation();
+            document.querySelectorAll(".menu").forEach(m => {
+                if (m !== menu) m.classList.remove("open");
+            });
+            menu.classList.toggle("open");
+        });
+    } else {
+        pill.disabled = true;
+        pill.style.cursor = "default";
+    }
+
+    right.appendChild(pillWrap);
+    row.appendChild(right);
+
+    row.addEventListener("click", () => openTaskModal(task));
+    row.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") openTaskModal(task);
+    });
+
+    return row;
+}
+
+// close menus on outside click
 document.addEventListener("click", () => {
-    document.querySelectorAll(".roadmap-menu")
-        .forEach(m => m.classList.remove("open"));
+    document.querySelectorAll(".menu").forEach(m => m.classList.remove("open"));
 });
 
-function openRenameTaskModal(taskId, columnName) {
-    if (!roadmap || !canEdit()) return;
-
-    if (!roadmap.columns[columnName]) {
-        console.error("Invalid column:", columnName);
-        return;
-    }
-
-    const task = roadmap.columns[columnName].find(t => t.id === taskId);
-    if (!task) {
-        console.error("Task not found:", taskId, "in column", columnName);
-        return;
-    }
-
-    taskToRenameId = taskId;
-    taskToRenameColumn = columnName;
-
-    renameModal.style.display = "flex"; // modal openen
-    renameName.value = task.title;       // zet huidige naam
-    renameDesc.value = task.text;        // zet huidige beschrijving
-    if (renameTags) renameTags.value = (task.tags || []).join(", "); // huidige tags
-}
-
-// Rename task
-async function renameTask() {
-    if (taskToRenameId === null || !taskToRenameColumn || !canEdit()) return;
-
-    const task = roadmap.columns[taskToRenameColumn].find(t => t.id === taskToRenameId);
-    if (!task) return;
-
-    const newTitle = renameName.value.trim();
-    const newText = renameDesc.value.trim();
-
-    if (newTitle === "") return; // verplicht titel
-
-    await api.updateTask(roadmap.id, taskToRenameId, {
-        title: newTitle,
-        description: newText,
-        tags: parseTags(renameTags ? renameTags.value : "")
+// ===== TASK MODAL =====
+function setModalStatus(status) {
+    modalStatus = status;
+    statusSeg.querySelectorAll("button").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.status === status);
     });
-
-    // reset modal state
-    renameModal.style.display = "none";
-    taskToRenameId = null;
-    taskToRenameColumn = null;
-
-    await reloadTasks();
 }
 
-// bevestigen rename
-renameBtn.addEventListener("click", renameTask);
+statusSeg.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+        if (!canEdit()) return;
+        setModalStatus(btn.dataset.status);
+    });
+});
 
-// ===== DRAG & DROP =====
-let draggedTaskId = null;
+function renderAssigneePicker(selectedIds) {
+    assigneePicker.innerHTML = "";
 
-function dragStart(e) {
-    draggedTaskId = e.target.dataset.id;
-    e.dataTransfer.setData("text/plain", draggedTaskId);
-    e.target.classList.add("dragging");
-}
+    if (members.length <= 1) {
+        // solo roadmap: nothing to assign, hide the picker entirely
+        assigneesGroup.style.display = "none";
+        return;
+    }
+    assigneesGroup.style.display = "flex";
 
-function dragEnd(e) {
-    e.target.classList.remove("dragging");
-}
+    members.forEach(m => {
+        const chip = document.createElement("label");
+        chip.className = "assignee-chip";
 
-// Bouw de reorder-payload op uit de huidige kolom-volgorde.
-function buildReorderPayload() {
-    const payload = [];
-    COLUMN_KEYS.forEach(col => {
-        roadmap.columns[col].forEach((t, index) => {
-            payload.push({ id: t.id, column: col, position: index });
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = m.id;
+        input.checked = selectedIds.includes(m.id);
+        input.disabled = !canEdit();
+        if (input.checked) chip.classList.add("selected");
+
+        input.addEventListener("change", () => {
+            chip.classList.toggle("selected", input.checked);
         });
+
+        const avatar = document.createElement("span");
+        avatar.className = "avatar";
+        avatar.textContent = (m.username || "?").charAt(0);
+
+        chip.appendChild(input);
+        chip.appendChild(avatar);
+        chip.appendChild(document.createTextNode(m.username));
+        assigneePicker.appendChild(chip);
     });
-    return payload;
 }
 
-async function moveTask(taskId, newColumn) {
-    if (!roadmap || !canEdit()) return;
-
-    let task = null;
-
-    // zoek en verwijder uit oude kolom
-    for (let col in roadmap.columns) {
-        const index = roadmap.columns[col].findIndex(t => t.id == taskId);
-        if (index !== -1) {
-            task = roadmap.columns[col].splice(index, 1)[0];
-            break;
-        }
-    }
-
-    if (!task) return;
-    if (!roadmap.columns[newColumn]) return; // onbekende doelkolom
-
-    // voeg toe aan nieuwe kolom (onderaan)
-    roadmap.columns[newColumn].push(task);
-
-    // direct lokaal renderen voor een snappy gevoel...
-    renderTasks();
-
-    // ...en de nieuwe volgorde naar de server sturen
-    try {
-        const updated = await api.reorderTasks(roadmap.id, buildReorderPayload());
-        if (updated) {
-            roadmap.columns = tasksToColumns(updated);
-            renderTasks();
-        }
-    } catch (err) {
-        // bij fout: herlaad de echte staat van de server
-        await reloadTasks();
-    }
+function selectedAssigneeIds() {
+    return [...assigneePicker.querySelectorAll("input:checked")].map(i => Number(i.value));
 }
 
-// ===== BUTTON EVENTS =====
-createTaskBtn.addEventListener("click", () => {
-    createTask(selectedValue, taskDesc.value, taskName.value, parseTags(taskTags ? taskTags.value : ""));
-    taskModal.style.display = "none"; // sluit modal
-    taskDesc.value = "";
+function setModalEditable(editable) {
+    taskName.disabled = !editable;
+    taskDesc.disabled = !editable;
+    taskTags.disabled = !editable;
+    saveTaskBtn.style.display = editable ? "inline-flex" : "none";
+    cancelTaskBtn.textContent = editable ? "Cancel" : "Close";
+}
+
+// open for creating
+function openCreateModal() {
+    if (!canEdit()) return;
+    editingTaskId = null;
+    taskModalTitle.textContent = "New task";
     taskName.value = "";
-    if (taskTags) taskTags.value = "";
+    taskDesc.value = "";
+    taskTags.value = "";
+    taskError.textContent = "";
+    deleteTaskBtn.style.display = "none";
+    saveTaskBtn.textContent = "Add task";
+    setModalStatus("planned");
+    renderAssigneePicker([]);
+    setModalEditable(true);
+    openModal(taskModal);
+    taskName.focus();
+}
+
+// open for viewing/editing an existing task
+function openTaskModal(task) {
+    editingTaskId = task.id;
+    taskModalTitle.textContent = canEdit() ? "Edit task" : "Task details";
+    taskName.value = task.title;
+    taskDesc.value = task.text;
+    taskTags.value = task.tags.join(", ");
+    taskError.textContent = "";
+    deleteTaskBtn.style.display = canEdit() ? "inline-flex" : "none";
+    saveTaskBtn.textContent = "Save changes";
+    setModalStatus(task.status);
+    renderAssigneePicker(task.assignees.map(a => a.id));
+    setModalEditable(canEdit());
+    openModal(taskModal);
+}
+
+addTaskBtn.addEventListener("click", openCreateModal);
+
+saveTaskBtn.addEventListener("click", async () => {
+    if (!canEdit()) return;
+    taskError.textContent = "";
+
+    const title = taskName.value.trim();
+    if (!title) {
+        taskError.textContent = "Give the task a name";
+        return;
+    }
+
+    const payload = {
+        title,
+        description: taskDesc.value.trim(),
+        status: modalStatus,
+        tags: parseTags(taskTags.value),
+        assignees: selectedAssigneeIds()
+    };
+
+    try {
+        if (editingTaskId === null) {
+            await api.createTask(roadmap.id, payload);
+        } else {
+            await api.updateTask(roadmap.id, editingTaskId, payload);
+        }
+        closeModal(taskModal);
+        await reloadTasks();
+    } catch (err) {
+        taskError.textContent = err.error || "Could not save the task";
+    }
 });
 
-cancelTaskBtn.addEventListener("click", () => {
-    taskModal.style.display = "none"; // sluit modal
+closeTaskModalBtn.addEventListener("click", () => closeModal(taskModal));
+cancelTaskBtn.addEventListener("click", () => closeModal(taskModal));
+taskModal.addEventListener("click", (e) => {
+    if (e.target === taskModal) closeModal(taskModal);
 });
 
-closeTaskModal.addEventListener("click", () => {
-    taskModal.style.display = "none"; // sluit modal
+// ===== DELETE TASK =====
+deleteTaskBtn.addEventListener("click", () => {
+    if (editingTaskId === null) return;
+    taskToDeleteId = editingTaskId;
+    openModal(deleteTaskModal);
 });
 
-// ===== RENAME MODAL SLUITEN =====
-renameModal.addEventListener("click", (e) => {
-    if (e.target === renameModal) renameModal.style.display = "none";
+confirmDeleteTaskBtn.addEventListener("click", async () => {
+    if (taskToDeleteId === null) return;
+    const id = taskToDeleteId;
+    taskToDeleteId = null;
+    closeModal(deleteTaskModal);
+    closeModal(taskModal);
+    await api.deleteTask(roadmap.id, id);
+    await reloadTasks();
 });
 
+closeDeleteTaskBtn.addEventListener("click", () => closeModal(deleteTaskModal));
+cancelDeleteTaskBtn.addEventListener("click", () => closeModal(deleteTaskModal));
 deleteTaskModal.addEventListener("click", (e) => {
-    if (e.target === deleteTaskModal) deleteTaskModal.style.display = "none";
+    if (e.target === deleteTaskModal) closeModal(deleteTaskModal);
 });
 
-cancelRenameBtn.addEventListener("click", () => {
-    renameModal.style.display = "none";
-});
+// ===== DATA =====
+async function reloadTasks() {
+    if (!roadmap) return;
+    const tasks = await api.getTasks(roadmap.id);
+    roadmap.groups = tasksToGroups(tasks);
+    renderTasks();
+}
 
-closeRenameBtn.addEventListener("click", () => {
-    renameModal.style.display = "none";
-});
+initRoadmapPage();

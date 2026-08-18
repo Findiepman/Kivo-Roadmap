@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings - Kivo</title>
+    <link rel="stylesheet" href="styles/theme.css">
+    <link rel="stylesheet" href="styles/settings.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-lion-32.png">
+</head>
+
+<body class="sky-body">
+
+    <header class="topbar">
+        <div class="topbar-left">
+            <a href="dashboard.html" class="icon-link" title="Back to dashboard" aria-label="Back to dashboard">&#8592;</a>
+            <a class="brand" href="dashboard.html">Kivo<span class="brand-dot">.</span></a>
+        </div>
+        <div class="topbar-right">
+            <button class="btn-ghost btn-small" id="logout-btn">Log out</button>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="page-head">
+            <h1 class="page-title">Settings</h1>
+        </div>
+
+        <!-- Your account -->
+        <section class="settings-card">
+            <h2 class="card-title">Your account</h2>
+            <div class="account-row">
+                <span class="avatar avatar-lg" id="me-avatar"></span>
+                <div>
+                    <p class="account-name" id="me-username"></p>
+                    <span class="role-badge" id="me-role"></span>
+                </div>
+            </div>
+            <p class="card-note" id="account-note" style="display:none;">
+                Accounts are managed by an admin. Ask them if you need your username or password changed.
+            </p>
+        </section>
+
+        <!-- Admin panel: only rendered for admin accounts -->
+        <section class="settings-card" id="admin-panel" style="display:none;">
+            <h2 class="card-title">Admin panel</h2>
+            <p class="card-note">Create accounts, change usernames and passwords, and remove accounts.</p>
+
+            <div class="admin-create">
+                <div class="form-group">
+                    <label for="new-username">Username</label>
+                    <input type="text" id="new-username" placeholder="at least 3 characters" />
+                </div>
+                <div class="form-group">
+                    <label for="new-password">Password</label>
+                    <input type="password" id="new-password" placeholder="at least 6 characters" />
+                </div>
+                <button class="btn" id="create-user-btn">Create account</button>
+            </div>
+            <p class="form-error" id="admin-error"></p>
+
+            <div class="user-list" id="user-list"></div>
+        </section>
+    </main>
+
+    <!-- Edit account modal -->
+    <div id="edit-user-modal" class="modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="edit-user-title">Edit account</h3>
+                <button id="close-edit-user" class="btn-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="edit-username">Username</label>
+                    <input type="text" id="edit-username" />
+                </div>
+                <div class="form-group">
+                    <label for="edit-password">New password</label>
+                    <input type="password" id="edit-password" placeholder="leave empty to keep the current one" />
+                </div>
+                <p class="form-error" id="edit-user-error"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-edit-user" class="btn-ghost">Cancel</button>
+                <button id="save-edit-user" class="btn">Save changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete account modal -->
+    <div id="delete-user-modal" class="modal">
+        <div class="modal-card modal-small">
+            <div class="modal-header">
+                <h3>Delete account?</h3>
+                <button id="close-delete-user" class="btn-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="delete-warning" id="delete-user-warning"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-delete-user" class="btn-ghost">Cancel</button>
+                <button id="confirm-delete-user" class="btn-danger">Delete account</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="scripts/settings.js"></script>
+</body>
+
+</html>

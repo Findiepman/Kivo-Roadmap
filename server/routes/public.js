@@ -24,8 +24,8 @@ router.get('/:token', (req, res) => {
 
   const rows = db
     .prepare(
-      'SELECT id, title, description, "column", position, tags ' +
-        'FROM tasks WHERE roadmap_id = ? ORDER BY "column", position ASC, id ASC'
+      'SELECT id, title, description, status, position, tags ' +
+        'FROM tasks WHERE roadmap_id = ? ORDER BY status, position ASC, id ASC'
     )
     .all(roadmap.id);
 
@@ -41,7 +41,7 @@ router.get('/:token', (req, res) => {
       id: r.id,
       title: r.title,
       description: r.description,
-      column: r.column,
+      status: r.status,
       position: r.position,
       tags,
     };

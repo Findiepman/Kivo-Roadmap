@@ -18,8 +18,8 @@ async function request(method, path, body, opts = {}) {
     body: body ? JSON.stringify(body) : undefined
   })
   // For authenticated requests, a 401 means the token is gone/expired:
-  // clear it and bounce to the login page. Skipped for login/register so
-  // their error messages can surface instead.
+  // clear it and bounce to the login page. Skipped for login so its
+  // error message can surface instead.
   if (res.status === 401 && !opts.skipAuthRedirect) {
     localStorage.removeItem('kivo_token')
     window.location.href = '/index.html'
@@ -34,24 +34,32 @@ async function request(method, path, body, opts = {}) {
 export const api = {
   login: (username, password) =>
     request('POST', '/auth/login', { username, password }, { skipAuthRedirect: true }),
-  register: (username, password) =>
-    request('POST', '/auth/register', { username, password }, { skipAuthRedirect: true }),
-  config: () => request('GET', '/auth/config', null, { skipAuthRedirect: true }),
   me: () => request('GET', '/auth/me'),
+
   getRoadmaps: () => request('GET', '/roadmaps'),
   createRoadmap: (data) => request('POST', '/roadmaps', data),
   updateRoadmap: (id, data) => request('PUT', `/roadmaps/${id}`, data),
   deleteRoadmap: (id) => request('DELETE', `/roadmaps/${id}`),
   getRoadmap: (id) => request('GET', `/roadmaps/${id}`),
+  getMembers: (id) => request('GET', `/roadmaps/${id}/members`),
+
   getTasks: (roadmapId) => request('GET', `/roadmaps/${roadmapId}/tasks`),
   createTask: (roadmapId, data) => request('POST', `/roadmaps/${roadmapId}/tasks`, data),
   updateTask: (roadmapId, taskId, data) => request('PUT', `/roadmaps/${roadmapId}/tasks/${taskId}`, data),
   deleteTask: (roadmapId, taskId) => request('DELETE', `/roadmaps/${roadmapId}/tasks/${taskId}`),
-  reorderTasks: (roadmapId, tasks) => request('PUT', `/roadmaps/${roadmapId}/tasks/reorder`, { tasks }),
+
   getAccess: (roadmapId) => request('GET', `/roadmaps/${roadmapId}/access`),
-  addAccess: (roadmapId, username, role) => request('POST', `/roadmaps/${roadmapId}/access`, { username, role }),
+  addAccess: (roadmapId, username, role = 'editor') =>
+    request('POST', `/roadmaps/${roadmapId}/access`, { username, role }),
   removeAccess: (roadmapId, userId) => request('DELETE', `/roadmaps/${roadmapId}/access/${userId}`),
+
   getShare: (roadmapId) => request('GET', `/roadmaps/${roadmapId}/share`),
   createShare: (roadmapId) => request('POST', `/roadmaps/${roadmapId}/share`),
   revokeShare: (roadmapId) => request('DELETE', `/roadmaps/${roadmapId}/share`),
+
+  // admin panel
+  adminListUsers: () => request('GET', '/admin/users'),
+  adminCreateUser: (username, password) => request('POST', '/admin/users', { username, password }),
+  adminUpdateUser: (id, data) => request('PUT', `/admin/users/${id}`, data),
+  adminDeleteUser: (id) => request('DELETE', `/admin/users/${id}`),
 }

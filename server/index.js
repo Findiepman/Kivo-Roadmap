@@ -13,6 +13,7 @@ if (!process.env.JWT_SECRET) {
 require('./db');
 
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 const roadmapRoutes = require('./routes/roadmaps');
 const taskRoutes = require('./routes/tasks');
 const accessRoutes = require('./routes/access');
@@ -26,6 +27,8 @@ app.use(express.json());
 
 // --- API routes ---
 app.use('/api/auth', authRoutes);
+// Admin-only account management.
+app.use('/api/admin', adminRoutes);
 // Public, no-auth read-only access by share token.
 app.use('/api/public', publicRoutes);
 // Nested resources mounted before the bare /api/roadmaps so the longer

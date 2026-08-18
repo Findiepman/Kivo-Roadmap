@@ -2,35 +2,36 @@ import { state } from "./state.js";
 import { roadmapFromApi } from "./storage.js";
 import { api } from "./api.js";
 
-// app.js is loaded by both dashboard.html and roadmap.html. Only the dashboard
-// has the "+ New Roadmap" button — bail early everywhere else so we don't touch
-// elements that don't exist on the roadmap editor page.
-const createRoadmapBtn = document.querySelector('.btn-new-roadmap');
-if (createRoadmapBtn) {
+// Dashboard page logic. Bail out if this script is loaded anywhere else.
+const listEl = document.getElementById("roadmap-list");
+if (listEl) {
     initDashboard();
 }
 
 function initDashboard() {
 
-    // ===== DOM ELEMENTEN =====
+    // ===== DOM =====
+    const newRoadmapBtn = document.getElementById("new-roadmap-btn");
+    const emptyState = document.getElementById("empty-state");
+    const emptyText = document.getElementById("empty-text");
+    const pageSubtitle = document.getElementById("page-subtitle");
 
-    // create roadmap modal
-    const modal = document.getElementById('create-modal');
-    const btnClose = document.getElementById('close-modal');
-    const btnCancel = document.getElementById('cancel-btn');
-    const btnCreate = document.getElementById('create-btn');
-
-    // inputs voor nieuwe roadmap
+    // create modal
+    const createModal = document.getElementById("create-modal");
+    const btnClose = document.getElementById("close-modal");
+    const btnCancel = document.getElementById("cancel-btn");
+    const btnCreate = document.getElementById("create-btn");
     const roadmapName = document.getElementById("roadmap-name");
     const roadmapDesc = document.getElementById("roadmap-description");
+    const createError = document.getElementById("create-error");
 
     // delete modal
-    const btnCloseDelete = document.getElementById('close-delete-modal');
-    const btnCancelDelete = document.getElementById('cancel-delete-btn');
-    const btnConfirmDelete = document.getElementById('confirm-delete-btn');
-    const deleteModal = document.getElementById('delete-modal');
+    const deleteModal = document.getElementById("delete-modal");
+    const btnCloseDelete = document.getElementById("close-delete-modal");
+    const btnCancelDelete = document.getElementById("cancel-delete-btn");
+    const btnConfirmDelete = document.getElementById("confirm-delete-btn");
 
-    // rename modal
+    // edit modal
     const renameModal = document.getElementById("rename-modal");
     const renameName = document.getElementById("rename-roadmap-name");
     const renameDesc = document.getElementById("rename-roadmap-description");
@@ -38,12 +39,11 @@ function initDashboard() {
     const cancelRenameBtn = document.getElementById("cancel-rename-btn");
     const closeRenameBtn = document.getElementById("close-rename-modal");
 
-    // access modal
+    // sharing modal
     const accessModal = document.getElementById("access-modal");
     const closeAccessBtn = document.getElementById("close-access-modal");
     const accessList = document.getElementById("access-list");
     const accessUsername = document.getElementById("access-username");
-    const accessRole = document.getElementById("access-role");
     const accessAddBtn = document.getElementById("access-add-btn");
     const accessError = document.getElementById("access-error");
 
@@ -54,183 +54,232 @@ function initDashboard() {
     const shareCopyBtn = document.getElementById("share-copy-btn");
     const shareDisableBtn = document.getElementById("share-disable-btn");
 
-    // dashboard info
-    const activeRoadmaps = document.getElementById("page-subtitle");
-
-    // ===== STATE VARIABELEN =====
     let roadmapToRename = null;
     let accessRoadmapId = null;
 
-    // ===== ROADMAP AANMAKEN =====
-    async function createRoadmap(name, desc) {
-        // check of naam al bestaat (client-side, vriendelijke check)
-        const existingRoadmap = state.roadmaps.find(
-            r => r.name.toLowerCase() === name.toLowerCase()
-        );
+    function openModal(m) { m.classList.add("open"); }
+    function closeModalEl(m) { m.classList.remove("open"); }
 
-        if (!existingRoadmap && name && desc) {
-            await api.createRoadmap({ title: name, description: desc });
-
-            roadmapDesc.value = "";
-            roadmapName.value = "";
-
-            await loadAndRender();
-        }
-    }
-
-    // ===== DASHBOARD RENDEREN =====
+    // ===== RENDER =====
     function renderDashboard() {
+        const n = state.roadmaps.length;
+        pageSubtitle.textContent =
+            n === 0 ? "No active roadmaps" :
+            n === 1 ? "1 active roadmap" :
+            `${n} active roadmaps`;
 
-        if (state.roadmaps.length === 0) {
-            activeRoadmaps.textContent = "0 Active Roadmaps";
-        } else if (state.roadmaps.length === 1) {
-            activeRoadmaps.textContent = "1 Active Roadmap";
-        } else {
-            activeRoadmaps.textContent = state.roadmaps.length + " Active Roadmaps";
+        listEl.innerHTML = "";
+        emptyState.style.display = n === 0 ? "block" : "none";
+        if (n === 0 && state.user && state.user.isAdmin) {
+            emptyText.textContent = "Create your first roadmap with the button above.";
         }
-
-        const grid = document.querySelector(".roadmaps-grid");
-        grid.innerHTML = "";
 
         state.roadmaps.forEach(roadmap => {
-
-            const isOwner = roadmap.role === "owner";
-
-            const card = document.createElement("div");
-            card.className = "roadmap-card";
-
-            const header = document.createElement("div");
-            header.className = "roadmap-header";
-
-            const title = document.createElement("h3");
-            title.textContent = roadmap.name;
-
-            // kleine rol-badge voor gedeelde roadmaps
-            if (!isOwner) {
-                const badge = document.createElement("span");
-                badge.className = "role-badge";
-                badge.textContent = roadmap.role === "editor" ? "Editor" : "Viewer";
-                title.appendChild(document.createTextNode(" "));
-                title.appendChild(badge);
-            }
-
-            const desc = document.createElement("p");
-            desc.className = "roadmap-description";
-            desc.textContent = roadmap.desc || "";
-
-            header.appendChild(title);
-            card.appendChild(header);
-            card.appendChild(desc);
-
-            // per-column task counts
-            const stats = document.createElement("div");
-            stats.className = "roadmap-stats";
-            const counts = roadmap.counts || {};
-            [
-                ["planned", "Planned"],
-                ["in_progress", "In Progress"],
-                ["testing", "Testing"],
-                ["released", "Released"]
-            ].forEach(([key, label]) => {
-                const stat = document.createElement("span");
-                stat.className = "stat";
-                stat.title = label;
-                const dot = document.createElement("span");
-                dot.className = "stat-dot stat-" + key;
-                const num = document.createElement("span");
-                num.className = "stat-num";
-                num.textContent = counts[key] || 0;
-                stat.appendChild(dot);
-                stat.appendChild(num);
-                stats.appendChild(stat);
-            });
-            card.appendChild(stats);
-
-            // 3-puntjes menu enkel voor de owner
-            if (isOwner) {
-                const menuBtn = document.createElement("button");
-                menuBtn.className = "roadmap-menu-btn";
-                menuBtn.textContent = "⋯";
-
-                const menu = document.createElement("div");
-                menu.className = "roadmap-menu";
-
-                const renameItem = document.createElement("button");
-                const accessItem = document.createElement("button");
-                const deleteItem = document.createElement("button");
-
-                renameItem.className = "menu-item";
-                accessItem.className = "menu-item";
-                deleteItem.className = "menu-item";
-
-                renameItem.textContent = "Rename";
-                accessItem.textContent = "Manage Access";
-                deleteItem.textContent = "Delete";
-                deleteItem.style.color = "red";
-
-                menu.appendChild(renameItem);
-                menu.appendChild(accessItem);
-                menu.appendChild(deleteItem);
-
-                deleteItem.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    openRoadmapDelete(roadmap);
-                    menu.classList.remove("open");
-                });
-
-                renameItem.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    openRenameModal(roadmap);
-                    menu.classList.remove("open");
-                });
-
-                accessItem.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    openAccessModal(roadmap);
-                    menu.classList.remove("open");
-                });
-
-                menuBtn.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    document.querySelectorAll(".roadmap-menu").forEach(m => {
-                        if (m !== menu) m.classList.remove("open");
-                    });
-                    menu.classList.toggle("open");
-                });
-
-                card.appendChild(menuBtn);
-                card.appendChild(menu);
-            }
-
-            // kaart click gedrag
-            card.addEventListener("click", (e) => {
-                if (isOwner && e.ctrlKey) {
-                    openRoadmapDelete(roadmap);
-                    return;
-                }
-                if (isOwner && e.shiftKey) {
-                    openRenameModal(roadmap);
-                    return;
-                }
-                onRoadmapClick(roadmap.id);
-            });
-
-            grid.appendChild(card);
+            listEl.appendChild(buildStrip(roadmap));
         });
     }
 
-    // menu sluiten bij klik buiten (één keer registreren)
+    function buildStrip(roadmap) {
+        const isOwner = roadmap.role === "owner";
+        const counts = roadmap.counts || {};
+        const total = counts.total || 0;
+        const finished = counts.finished || 0;
+        const inProgress = counts.in_progress || 0;
+        const planned = counts.planned || 0;
+
+        const strip = document.createElement("article");
+        strip.className = "roadmap-strip";
+        strip.tabIndex = 0;
+        strip.setAttribute("role", "link");
+        strip.setAttribute("aria-label", `Open roadmap ${roadmap.name}`);
+
+        // top row: title (+ role badge)
+        const top = document.createElement("div");
+        top.className = "strip-top";
+
+        const title = document.createElement("h3");
+        title.className = "strip-title";
+        title.textContent = roadmap.name;
+        if (!isOwner) {
+            const badge = document.createElement("span");
+            badge.className = "role-badge";
+            badge.textContent = "Shared with you";
+            title.appendChild(badge);
+        }
+        top.appendChild(title);
+        strip.appendChild(top);
+
+        if (roadmap.desc) {
+            const desc = document.createElement("p");
+            desc.className = "strip-desc";
+            desc.textContent = roadmap.desc;
+            strip.appendChild(desc);
+        }
+
+        // runway progress bar
+        const runwayWrap = document.createElement("div");
+        runwayWrap.className = "strip-runway";
+
+        const runway = document.createElement("div");
+        runway.className = "runway";
+        if (total > 0) {
+            const segFinished = document.createElement("span");
+            segFinished.className = "seg seg-finished";
+            segFinished.style.width = `${(finished / total) * 100}%`;
+            const segProgress = document.createElement("span");
+            segProgress.className = "seg seg-progress";
+            segProgress.style.width = `${(inProgress / total) * 100}%`;
+            runway.appendChild(segFinished);
+            runway.appendChild(segProgress);
+        }
+
+        const runwayLabel = document.createElement("span");
+        runwayLabel.className = "runway-label";
+        runwayLabel.textContent = total > 0
+            ? `${finished} of ${total} finished`
+            : "No tasks yet";
+
+        runwayWrap.appendChild(runway);
+        runwayWrap.appendChild(runwayLabel);
+        strip.appendChild(runwayWrap);
+
+        // meta row: per-status counts + member count
+        const meta = document.createElement("div");
+        meta.className = "strip-meta";
+        [
+            ["planned", planned, "planned"],
+            ["in_progress", inProgress, "in progress"],
+            ["finished", finished, "finished"]
+        ].forEach(([key, value, label]) => {
+            const item = document.createElement("span");
+            const dot = document.createElement("span");
+            dot.className = `count-dot ${key}`;
+            item.appendChild(dot);
+            item.appendChild(document.createTextNode(`${value} ${label}`));
+            meta.appendChild(item);
+        });
+
+        const members = document.createElement("span");
+        members.className = "strip-members";
+        members.textContent = roadmap.memberCount === 1
+            ? "1 member"
+            : `${roadmap.memberCount} members`;
+        meta.appendChild(members);
+        strip.appendChild(meta);
+
+        // owner menu
+        if (isOwner) {
+            const wrap = document.createElement("div");
+            wrap.className = "menu-wrap strip-menu-wrap";
+
+            const menuBtn = document.createElement("button");
+            menuBtn.className = "menu-btn";
+            menuBtn.textContent = "⋯";
+            menuBtn.setAttribute("aria-label", "Roadmap options");
+
+            const menu = document.createElement("div");
+            menu.className = "menu";
+
+            const renameItem = document.createElement("button");
+            renameItem.className = "menu-item";
+            renameItem.textContent = "Edit details";
+            renameItem.addEventListener("click", (e) => {
+                e.stopPropagation();
+                openRenameModal(roadmap);
+                menu.classList.remove("open");
+            });
+
+            const accessItem = document.createElement("button");
+            accessItem.className = "menu-item";
+            accessItem.textContent = "Share";
+            accessItem.addEventListener("click", (e) => {
+                e.stopPropagation();
+                openAccessModal(roadmap);
+                menu.classList.remove("open");
+            });
+
+            const deleteItem = document.createElement("button");
+            deleteItem.className = "menu-item danger";
+            deleteItem.textContent = "Delete";
+            deleteItem.addEventListener("click", (e) => {
+                e.stopPropagation();
+                openRoadmapDelete(roadmap);
+                menu.classList.remove("open");
+            });
+
+            menuBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                document.querySelectorAll(".menu").forEach(m => {
+                    if (m !== menu) m.classList.remove("open");
+                });
+                menu.classList.toggle("open");
+            });
+
+            menu.appendChild(renameItem);
+            menu.appendChild(accessItem);
+            menu.appendChild(deleteItem);
+            wrap.appendChild(menuBtn);
+            wrap.appendChild(menu);
+            strip.appendChild(wrap);
+        }
+
+        strip.addEventListener("click", () => {
+            window.location.href = `roadmap.html?id=${roadmap.id}`;
+        });
+        strip.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                window.location.href = `roadmap.html?id=${roadmap.id}`;
+            }
+        });
+
+        return strip;
+    }
+
+    // close menus on outside click
     document.addEventListener("click", () => {
-        document.querySelectorAll(".roadmap-menu")
-            .forEach(m => m.classList.remove("open"));
+        document.querySelectorAll(".menu").forEach(m => m.classList.remove("open"));
     });
 
-    // ===== RENAME MODAL =====
+    // ===== CREATE =====
+    newRoadmapBtn.addEventListener("click", () => {
+        createError.textContent = "";
+        openModal(createModal);
+        roadmapName.focus();
+    });
+
+    function closeCreateModal() {
+        closeModalEl(createModal);
+        roadmapName.value = "";
+        roadmapDesc.value = "";
+    }
+
+    btnCreate.addEventListener("click", async () => {
+        const name = roadmapName.value.trim();
+        if (!name) {
+            createError.textContent = "Give the roadmap a name";
+            return;
+        }
+        try {
+            await api.createRoadmap({ title: name, description: roadmapDesc.value.trim() });
+            closeCreateModal();
+            await loadAndRender();
+        } catch (err) {
+            createError.textContent = err.error || "Could not create the roadmap";
+        }
+    });
+
+    btnClose.addEventListener("click", closeCreateModal);
+    btnCancel.addEventListener("click", closeCreateModal);
+    createModal.addEventListener("click", (e) => {
+        if (e.target === createModal) closeCreateModal();
+    });
+
+    // ===== EDIT =====
     function openRenameModal(roadmap) {
-        renameModal.style.display = "flex";
         roadmapToRename = roadmap;
         renameName.value = roadmap.name;
         renameDesc.value = roadmap.desc;
+        openModal(renameModal);
     }
 
     renameBtn.addEventListener("click", async () => {
@@ -243,35 +292,116 @@ function initDashboard() {
             description: renameDesc.value
         });
 
-        renameModal.style.display = "none";
+        closeModalEl(renameModal);
         roadmapToRename = null;
         await loadAndRender();
     });
 
-    // ===== ROADMAP DELETE =====
-    function openRoadmapDelete(roadmap) {
-        deleteModal.style.display = "flex";
+    cancelRenameBtn.addEventListener("click", () => closeModalEl(renameModal));
+    closeRenameBtn.addEventListener("click", () => closeModalEl(renameModal));
+    renameModal.addEventListener("click", (e) => {
+        if (e.target === renameModal) closeModalEl(renameModal);
+    });
 
+    // ===== DELETE =====
+    function openRoadmapDelete(roadmap) {
+        openModal(deleteModal);
         btnConfirmDelete.onclick = async () => {
-            deleteModal.style.display = "none";
+            closeModalEl(deleteModal);
             await api.deleteRoadmap(roadmap.id);
             await loadAndRender();
         };
-
-        btnCloseDelete.onclick = () => deleteModal.style.display = "none";
-        btnCancelDelete.onclick = () => deleteModal.style.display = "none";
     }
 
-    // ===== ACCESS / SHARING =====
+    btnCloseDelete.addEventListener("click", () => closeModalEl(deleteModal));
+    btnCancelDelete.addEventListener("click", () => closeModalEl(deleteModal));
+    deleteModal.addEventListener("click", (e) => {
+        if (e.target === deleteModal) closeModalEl(deleteModal);
+    });
+
+    // ===== SHARING =====
     async function openAccessModal(roadmap) {
         accessRoadmapId = roadmap.id;
         accessError.textContent = "";
         accessUsername.value = "";
-        accessRole.value = "editor";
-        accessModal.style.display = "flex";
+        openModal(accessModal);
         await renderAccessList();
         await loadShareLink();
     }
+
+    async function renderAccessList() {
+        accessList.innerHTML = "";
+        let users = [];
+        try {
+            users = await api.getAccess(accessRoadmapId);
+        } catch (err) {
+            accessError.textContent = err.error || "Could not load the member list";
+            return;
+        }
+
+        if (!users || users.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "access-empty";
+            empty.textContent = "No members yet. Add someone by username.";
+            accessList.appendChild(empty);
+            return;
+        }
+
+        users.forEach(u => {
+            const row = document.createElement("div");
+            row.className = "access-row";
+
+            const left = document.createElement("div");
+            left.className = "access-row-left";
+
+            const avatar = document.createElement("span");
+            avatar.className = "avatar";
+            avatar.textContent = (u.username || "?").charAt(0);
+
+            const name = document.createElement("span");
+            name.textContent = u.username;
+
+            left.appendChild(avatar);
+            left.appendChild(name);
+
+            const removeBtn = document.createElement("button");
+            removeBtn.className = "btn-danger-ghost btn-small";
+            removeBtn.textContent = "Remove";
+            removeBtn.addEventListener("click", async () => {
+                await api.removeAccess(accessRoadmapId, u.userId);
+                await renderAccessList();
+            });
+
+            row.appendChild(left);
+            row.appendChild(removeBtn);
+            accessList.appendChild(row);
+        });
+    }
+
+    accessAddBtn.addEventListener("click", async () => {
+        accessError.textContent = "";
+        const username = accessUsername.value.trim();
+        if (!username) {
+            accessError.textContent = "Enter a username";
+            return;
+        }
+        try {
+            await api.addAccess(accessRoadmapId, username);
+            accessUsername.value = "";
+            await renderAccessList();
+        } catch (err) {
+            accessError.textContent = err.error || "Could not add that user";
+        }
+    });
+
+    accessUsername.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") accessAddBtn.click();
+    });
+
+    closeAccessBtn.addEventListener("click", () => closeModalEl(accessModal));
+    accessModal.addEventListener("click", (e) => {
+        if (e.target === accessModal) closeModalEl(accessModal);
+    });
 
     // ===== PUBLIC SHARE LINK =====
     function publicUrl(token) {
@@ -284,7 +414,7 @@ function initDashboard() {
             shareLinkBox.style.display = "flex";
             shareLinkInput.value = publicUrl(token);
         } else {
-            shareCreateBtn.style.display = "block";
+            shareCreateBtn.style.display = "inline-flex";
             shareLinkBox.style.display = "none";
             shareLinkInput.value = "";
         }
@@ -310,7 +440,7 @@ function initDashboard() {
         if (!el) return;
         if (res && res.publicToken) {
             const n = res.viewCount || 0;
-            let txt = `👁 ${n} view${n === 1 ? "" : "s"}`;
+            let txt = `${n} view${n === 1 ? "" : "s"}`;
             if (n > 0 && res.lastViewedAt) txt += ` · last viewed ${formatWhen(res.lastViewedAt)}`;
             el.textContent = txt;
             el.style.display = "block";
@@ -333,9 +463,9 @@ function initDashboard() {
     shareCreateBtn.addEventListener("click", async () => {
         try {
             await api.createShare(accessRoadmapId);
-            await loadShareLink(); // refresh link + (fresh) stats
+            await loadShareLink();
         } catch (err) {
-            accessError.textContent = err.error || "Could not create link";
+            accessError.textContent = err.error || "Could not create the link";
         }
     });
 
@@ -345,7 +475,7 @@ function initDashboard() {
             renderShareLink(null);
             renderShareStats(null);
         } catch (err) {
-            accessError.textContent = err.error || "Could not disable link";
+            accessError.textContent = err.error || "Could not disable the link";
         }
     });
 
@@ -354,157 +484,28 @@ function initDashboard() {
         try {
             await navigator.clipboard.writeText(shareLinkInput.value);
         } catch (err) {
-            document.execCommand("copy"); // fallback for older browsers
+            document.execCommand("copy");
         }
         const original = shareCopyBtn.textContent;
         shareCopyBtn.textContent = "Copied!";
         setTimeout(() => { shareCopyBtn.textContent = original; }, 1500);
     });
 
-    async function renderAccessList() {
-        accessList.innerHTML = "";
-        let users = [];
-        try {
-            users = await api.getAccess(accessRoadmapId);
-        } catch (err) {
-            accessError.textContent = err.error || "Could not load access list";
-            return;
-        }
-
-        if (!users || users.length === 0) {
-            const empty = document.createElement("p");
-            empty.className = "access-empty";
-            empty.textContent = "No one else has access yet.";
-            accessList.appendChild(empty);
-            return;
-        }
-
-        users.forEach(u => {
-            const row = document.createElement("div");
-            row.className = "access-row";
-
-            const name = document.createElement("span");
-            name.className = "access-name";
-            name.textContent = u.username;
-
-            const badge = document.createElement("span");
-            badge.className = "role-badge";
-            badge.textContent = u.role === "editor" ? "Editor" : "Viewer";
-
-            const removeBtn = document.createElement("button");
-            removeBtn.className = "access-remove";
-            removeBtn.textContent = "Remove";
-            removeBtn.addEventListener("click", async () => {
-                await api.removeAccess(accessRoadmapId, u.userId);
-                await renderAccessList();
-            });
-
-            const left = document.createElement("div");
-            left.className = "access-row-left";
-            left.appendChild(name);
-            left.appendChild(badge);
-
-            row.appendChild(left);
-            row.appendChild(removeBtn);
-            accessList.appendChild(row);
-        });
-    }
-
-    accessAddBtn.addEventListener("click", async () => {
-        accessError.textContent = "";
-        const username = accessUsername.value.trim();
-        const role = accessRole.value;
-        if (!username) {
-            accessError.textContent = "Enter a username";
-            return;
-        }
-        try {
-            await api.addAccess(accessRoadmapId, username, role);
-            accessUsername.value = "";
-            await renderAccessList();
-        } catch (err) {
-            accessError.textContent = err.error || "Could not add user";
-        }
-    });
-
-    closeAccessBtn.addEventListener("click", () => accessModal.style.display = "none");
-    accessModal.addEventListener("click", (e) => {
-        if (e.target === accessModal) accessModal.style.display = "none";
-    });
-
-    // ===== NAVIGATIE =====
-    function onRoadmapClick(id) {
-        window.location.href = `roadmap.html?id=${id}`;
-    }
-
-    // ===== CREATE MODAL =====
-    function closeModal() {
-        modal.style.display = "none";
-        roadmapName.value = "";
-        roadmapDesc.value = "";
-    }
-
-    createRoadmapBtn.addEventListener("click", () => {
-        modal.style.display = "flex";
-    });
-
-    btnClose.addEventListener("click", closeModal);
-    btnCancel.addEventListener("click", closeModal);
-
-    modal.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
-    });
-
-    deleteModal.addEventListener("click", (e) => {
-        if (e.target === deleteModal) deleteModal.style.display = "none";
-    });
-
-    renameModal.addEventListener("click", (e) => {
-        if (e.target === renameModal) renameModal.style.display = "none";
-    });
-
-    cancelRenameBtn.addEventListener("click", () => {
-        renameModal.style.display = "none";
-    });
-
-    closeRenameBtn.addEventListener("click", () => {
-        renameModal.style.display = "none";
-    });
-
-    // ===== ROADMAP AANMAKEN BUTTON =====
-    btnCreate.addEventListener("click", () => {
-        if (roadmapName.value && roadmapDesc.value !== "") {
-            createRoadmap(roadmapName.value, roadmapDesc.value);
-            closeModal();
-        } else {
-            if (roadmapName.value === "") {
-                roadmapName.placeholder = "You have to input a name!";
-            }
-            if (roadmapDesc.value === "") {
-                roadmapDesc.placeholder = "You have to input a description.";
-            }
-        }
-    });
-
     // ===== LOGOUT =====
     const logoutBtn = document.getElementById("logout-btn");
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
-            localStorage.removeItem("kivo_token");
-            window.location.href = "index.html";
-        });
-    }
+    logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("kivo_token");
+        window.location.href = "index.html";
+    });
 
-    // ===== DATA LADEN =====
+    // ===== DATA =====
     async function loadAndRender() {
         const roadmaps = await api.getRoadmaps();
         state.roadmaps = roadmaps.map(roadmapFromApi);
         renderDashboard();
     }
 
-    // ===== APP START =====
     async function initApp() {
-        // verify de sessie; bij 401 stuurt api.me() ons al naar de login
         let me;
         try {
             me = await api.me();
@@ -512,17 +513,17 @@ function initDashboard() {
             window.location.href = "index.html";
             return;
         }
-        if (!me) return; // redirect was al ingezet
+        if (!me) return; // redirect already underway
 
         state.user = me;
-        const userLabel = document.getElementById("sidebar-username");
+        const userLabel = document.getElementById("topbar-username");
         if (userLabel) userLabel.textContent = me.username;
         const avatar = document.getElementById("user-avatar");
         if (avatar) avatar.textContent = (me.username || "?").charAt(0);
 
-        // alleen toegestane accounts mogen roadmaps aanmaken
-        if (me.canCreateRoadmaps === false) {
-            createRoadmapBtn.style.display = "none";
+        // only admins may create roadmaps
+        if (!me.isAdmin) {
+            newRoadmapBtn.style.display = "none";
         }
 
         await loadAndRender();

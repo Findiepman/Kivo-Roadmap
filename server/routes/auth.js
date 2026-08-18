@@ -9,17 +9,6 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_EXPIRY = '30d';
-const SALT_ROUNDS = 12;
-
-// Self-service registration is OFF unless ALLOW_REGISTRATION=true.
-function registrationAllowed() {
-  return String(process.env.ALLOW_REGISTRATION || '').toLowerCase() === 'true';
-}
-
-// GET /api/auth/config — public flags the login page reads (no auth).
-router.get('/config', (req, res) => {
-  res.json({ allowRegistration: registrationAllowed() });
-});
 
 function signToken(user) {
   return jwt.sign(
@@ -29,44 +18,9 @@ function signToken(user) {
   );
 }
 
-// POST /api/auth/register
-router.post('/register', (req, res) => {
-  if (!registrationAllowed()) {
-    return res.status(403).json({ error: 'Registration is disabled' });
-  }
-
-  const { username, password } = req.body || {};
-
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
-  }
-  if (typeof username !== 'string' || typeof password !== 'string') {
-    return res.status(400).json({ error: 'Username and password must be strings' });
-  }
-  if (username.length < 3) {
-    return res.status(400).json({ error: 'Username must be at least 3 characters' });
-  }
-  if (password.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters' });
-  }
-
-  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
-  if (existing) {
-    return res.status(409).json({ error: 'Username already taken' });
-  }
-
-  const passwordHash = bcrypt.hashSync(password, SALT_ROUNDS);
-  const result = db
-    .prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)')
-    .run(username, passwordHash);
-
-  const user = { id: result.lastInsertRowid, username };
-  const token = signToken(user);
-
-  res.status(201).json({ token, user: { id: user.id, username: user.username } });
-});
-
 // POST /api/auth/login
+// There is no self-service registration: accounts are created by an admin
+// in the admin panel (see routes/admin.js).
 router.post('/login', (req, res) => {
   const { username, password } = req.body || {};
 
@@ -85,13 +39,16 @@ router.post('/login', (req, res) => {
   }
 
   const token = signToken(user);
-  res.json({ token, user: { id: user.id, username: user.username } });
+  res.json({
+    token,
+    user: { id: user.id, username: user.username, isAdmin: !!user.is_admin },
+  });
 });
 
 // GET /api/auth/me
 router.get('/me', auth, (req, res) => {
   const user = db
-    .prepare('SELECT id, username FROM users WHERE id = ?')
+    .prepare('SELECT id, username, is_admin FROM users WHERE id = ?')
     .get(req.user.userId);
 
   if (!user) {
@@ -101,7 +58,8 @@ router.get('/me', auth, (req, res) => {
   res.json({
     id: user.id,
     username: user.username,
-    canCreateRoadmaps: isAdmin(user.username),
+    isAdmin: !!user.is_admin,
+    canCreateRoadmaps: isAdmin(user.id),
   });
 });
 
