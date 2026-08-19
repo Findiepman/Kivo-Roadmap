@@ -43,12 +43,24 @@ app.use('/api', (req, res) => {
 });
 
 // --- Static frontend ---
-const publicDir = path.join(__dirname, '..', 'public');
-app.use(express.static(publicDir));
+// The HTML pages live at the repo root (so GitHub Pages can serve them too);
+// assets live in public/ and are referenced as "public/..." from the pages.
+// Only the pages are exposed from the root — never server code or the db.
+const rootDir = path.join(__dirname, '..');
+app.use('/public', express.static(path.join(rootDir, 'public')));
+
+const PAGES = [
+  'index.html', 'dashboard.html', 'roadmap.html',
+  'settings.html', 'view.html', 'landing.html', '404.html',
+];
+app.get('/', (req, res) => res.sendFile(path.join(rootDir, 'index.html')));
+for (const page of PAGES) {
+  app.get(`/${page}`, (req, res) => res.sendFile(path.join(rootDir, page)));
+}
 
 // Anything else: serve the login page (index.html). Keeps deep links working.
 app.get('*', (req, res) => {
-  res.sendFile(path.join(publicDir, 'index.html'));
+  res.sendFile(path.join(rootDir, 'index.html'));
 });
 
 // JSON error handler — all errors return { error }.

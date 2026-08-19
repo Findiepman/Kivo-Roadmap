@@ -1,6 +1,8 @@
 // Standalone read-only viewer for a public roadmap. No login, no api.js (so the
 // auth-redirect behaviour never applies here) — just a plain fetch by token.
 
+import { API_BASE } from "./config.js";
+
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token");
 
@@ -125,7 +127,7 @@ async function load() {
         return;
     }
     try {
-        const res = await fetch(`/api/public/${encodeURIComponent(token)}`);
+        const res = await fetch(`${API_BASE}/public/${encodeURIComponent(token)}`);
         if (!res.ok) {
             showUnavailable();
             return;

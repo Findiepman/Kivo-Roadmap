@@ -14,6 +14,7 @@ RUN apk del .build-deps
 
 COPY server/ ./server/
 COPY public/ ./public/
+COPY *.html ./
 
 RUN mkdir -p data
 

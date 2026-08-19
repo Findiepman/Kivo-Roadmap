@@ -1,4 +1,4 @@
-const BASE = '/api'
+import { API_BASE as BASE } from './config.js'
 
 function getToken() {
   return localStorage.getItem('kivo_token')
@@ -22,7 +22,7 @@ async function request(method, path, body, opts = {}) {
   // error message can surface instead.
   if (res.status === 401 && !opts.skipAuthRedirect) {
     localStorage.removeItem('kivo_token')
-    window.location.href = '/index.html'
+    window.location.href = 'index.html'
     return
   }
   if (!res.ok) throw await res.json().catch(() => ({ error: 'Request failed' }))
