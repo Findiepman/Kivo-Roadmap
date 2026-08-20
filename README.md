@@ -60,7 +60,8 @@ admin panel in Settings, and have full access to all roadmaps.
    tunnel, `CLOUDFLARE_TUNNEL_TOKEN`).
 2. `docker compose up -d --build`
 3. The app listens on `app:3000` inside the Docker network. Cloudflare Tunnel
-   routes `roadmap.primalmines.net` → `http://app:3000`.
+   routes the public hostnames (`roadmap.findiepman.dev` and
+   `roadmap.primalmines.net`) → `http://app:3000`.
 
 ## Running locally without Docker
 

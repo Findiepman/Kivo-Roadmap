@@ -43,8 +43,8 @@ app.use('/api', (req, res) => {
 });
 
 // --- Static frontend ---
-// The HTML pages live at the repo root (so GitHub Pages can serve them too);
-// assets live in public/ and are referenced as "public/..." from the pages.
+// The HTML pages live at the repo root; assets live in public/ and are
+// referenced as "public/..." from the pages.
 // Only the pages are exposed from the root — never server code or the db.
 const rootDir = path.join(__dirname, '..');
 app.use('/public', express.static(path.join(rootDir, 'public')));
