@@ -1,4 +1,4 @@
-/* Settings — account overview plus the admin panel. */
+/* Settings — account overview. Admins manage accounts from the dashboard. */
 
 .page {
     max-width: 720px;
@@ -61,76 +61,8 @@
     margin-bottom: 0.25rem;
 }
 
-/* admin create form: inline on wide screens */
-.admin-create {
-    display: grid;
-    grid-template-columns: 1fr 1fr auto;
-    gap: 0.75rem;
-    align-items: end;
-    margin-bottom: 0.4rem;
-}
-
-.admin-create .form-group {
-    margin-bottom: 0;
-}
-
-.user-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 1rem;
-}
-
-.user-row {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    padding: 0.6rem 0.8rem;
-}
-
-.user-row .user-name {
-    font-weight: 700;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 0;
-    flex-wrap: wrap;
-}
-
-.user-row .user-since {
-    font-size: 0.78rem;
-    color: var(--ink-soft);
-    font-weight: 500;
-}
-
-.user-row .user-actions {
-    margin-left: auto;
-    display: flex;
-    gap: 0.4rem;
-    flex-shrink: 0;
-}
-
 @media (max-width: 640px) {
     .page {
         padding: 2rem 1rem 4rem;
-    }
-
-    .admin-create {
-        grid-template-columns: 1fr;
-        align-items: stretch;
-    }
-
-    .user-row {
-        flex-wrap: wrap;
-    }
-
-    .user-row .user-actions {
-        width: 100%;
-        margin-left: 0;
-        justify-content: flex-end;
     }
 }

@@ -10,14 +10,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" sizes="32x32" href="public/favicon-lion-32.png">
+    <link rel="icon" type="image/svg+xml" href="public/favicon.svg">
 </head>
 
 <body class="sky-body">
 
     <header class="topbar">
         <div class="topbar-left">
-            <a href="dashboard.html" class="icon-link" title="Back to dashboard" aria-label="Back to dashboard">&#8592;</a>
+            <a href="dashboard.html" class="icon-link" title="Back to dashboard" aria-label="Back to dashboard"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
             <a class="brand" href="dashboard.html">Kivo<span class="brand-dot">.</span></a>
         </div>
         <div class="topbar-right">
@@ -45,69 +45,16 @@
             </p>
         </section>
 
-        <!-- Admin panel: only rendered for admin accounts -->
+        <!-- Admins: accounts are managed from the admin dashboard -->
         <section class="settings-card" id="admin-panel" style="display:none;">
-            <h2 class="card-title">Admin panel</h2>
-            <p class="card-note">Create accounts, change usernames and passwords, and remove accounts.</p>
-
-            <div class="admin-create">
-                <div class="form-group">
-                    <label for="new-username">Username</label>
-                    <input type="text" id="new-username" placeholder="at least 3 characters" />
-                </div>
-                <div class="form-group">
-                    <label for="new-password">Password</label>
-                    <input type="password" id="new-password" placeholder="at least 6 characters" />
-                </div>
-                <button class="btn" id="create-user-btn">Create account</button>
-            </div>
-            <p class="form-error" id="admin-error"></p>
-
-            <div class="user-list" id="user-list"></div>
+            <h2 class="card-title">Accounts</h2>
+            <p class="card-note">
+                As an admin you create accounts, change usernames and passwords and delete accounts
+                from the dashboard, next to every roadmap.
+            </p>
+            <a class="btn" href="dashboard.html">Open the admin dashboard</a>
         </section>
     </main>
-
-    <!-- Edit account modal -->
-    <div id="edit-user-modal" class="modal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 id="edit-user-title">Edit account</h3>
-                <button id="close-edit-user" class="btn-close" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="edit-username">Username</label>
-                    <input type="text" id="edit-username" />
-                </div>
-                <div class="form-group">
-                    <label for="edit-password">New password</label>
-                    <input type="password" id="edit-password" placeholder="leave empty to keep the current one" />
-                </div>
-                <p class="form-error" id="edit-user-error"></p>
-            </div>
-            <div class="modal-footer">
-                <button id="cancel-edit-user" class="btn-ghost">Cancel</button>
-                <button id="save-edit-user" class="btn">Save changes</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Delete account modal -->
-    <div id="delete-user-modal" class="modal">
-        <div class="modal-card modal-small">
-            <div class="modal-header">
-                <h3>Delete account?</h3>
-                <button id="close-delete-user" class="btn-close" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p class="delete-warning" id="delete-user-warning"></p>
-            </div>
-            <div class="modal-footer">
-                <button id="cancel-delete-user" class="btn-ghost">Cancel</button>
-                <button id="confirm-delete-user" class="btn-danger">Delete account</button>
-            </div>
-        </div>
-    </div>
 
     <script type="module" src="public/scripts/settings.js"></script>
 </body>

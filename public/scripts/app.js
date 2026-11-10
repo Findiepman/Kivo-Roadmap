@@ -1,6 +1,7 @@
 import { state } from "./state.js";
-import { roadmapFromApi } from "./storage.js";
+import { roadmapFromApi, formatWhen } from "./storage.js";
 import { api } from "./api.js";
+import { initAdminPanel } from "./admin.js";
 
 // Dashboard page logic. Bail out if this script is loaded anywhere else.
 const listEl = document.getElementById("roadmap-list");
@@ -56,6 +57,7 @@ function initDashboard() {
 
     let roadmapToRename = null;
     let accessRoadmapId = null;
+    let adminPanel = null; // set for admin accounts: the accounts column
 
     function openModal(m) { m.classList.add("open"); }
     function closeModalEl(m) { m.classList.remove("open"); }
@@ -63,10 +65,14 @@ function initDashboard() {
     // ===== RENDER =====
     function renderDashboard() {
         const n = state.roadmaps.length;
-        pageSubtitle.textContent =
-            n === 0 ? "No active roadmaps" :
-            n === 1 ? "1 active roadmap" :
-            `${n} active roadmaps`;
+        if (adminPanel) {
+            document.getElementById("roadmap-count").textContent = n;
+        } else {
+            pageSubtitle.textContent =
+                n === 0 ? "No active roadmaps" :
+                n === 1 ? "1 active roadmap" :
+                `${n} active roadmaps`;
+        }
 
         listEl.innerHTML = "";
         emptyState.style.display = n === 0 ? "block" : "none";
@@ -103,7 +109,9 @@ function initDashboard() {
         if (!isOwner) {
             const badge = document.createElement("span");
             badge.className = "role-badge";
-            badge.textContent = "Shared with you";
+            badge.textContent = roadmap.ownerUsername
+                ? `Shared by ${roadmap.ownerUsername}`
+                : "Shared with you";
             title.appendChild(badge);
         }
         top.appendChild(title);
@@ -158,6 +166,16 @@ function initDashboard() {
             item.appendChild(document.createTextNode(`${value} ${label}`));
             meta.appendChild(item);
         });
+
+        // admins see every roadmap, so say whose each one is
+        if (adminPanel && roadmap.ownerUsername) {
+            const owner = document.createElement("span");
+            owner.className = "strip-owner";
+            owner.textContent = state.user && roadmap.ownerId === state.user.id
+                ? "Owner: you"
+                : `Owner: ${roadmap.ownerUsername}`;
+            meta.appendChild(owner);
+        }
 
         const members = document.createElement("span");
         members.className = "strip-members";
@@ -420,21 +438,6 @@ function initDashboard() {
         }
     }
 
-    // "2026-06-12 12:33:10" (UTC) -> "3 minutes ago" / local date
-    function formatWhen(ts) {
-        if (!ts) return "";
-        const when = new Date(ts.replace(" ", "T") + "Z");
-        const diff = Date.now() - when.getTime();
-        const min = Math.floor(diff / 60000);
-        if (min < 1) return "just now";
-        if (min < 60) return `${min} minute${min === 1 ? "" : "s"} ago`;
-        const hr = Math.floor(min / 60);
-        if (hr < 24) return `${hr} hour${hr === 1 ? "" : "s"} ago`;
-        const days = Math.floor(hr / 24);
-        if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
-        return when.toLocaleDateString();
-    }
-
     function renderShareStats(res) {
         const el = document.getElementById("share-stats");
         if (!el) return;
@@ -501,8 +504,10 @@ function initDashboard() {
     // ===== DATA =====
     async function loadAndRender() {
         const roadmaps = await api.getRoadmaps();
+        if (!roadmaps) return; // 401 redirect already underway
         state.roadmaps = roadmaps.map(roadmapFromApi);
         renderDashboard();
+        if (adminPanel) await adminPanel.renderAccounts();
     }
 
     async function initApp() {
@@ -521,9 +526,17 @@ function initDashboard() {
         const avatar = document.getElementById("user-avatar");
         if (avatar) avatar.textContent = (me.username || "?").charAt(0);
 
-        // only admins may create roadmaps
+        // only admins may create roadmaps; they also get the admin dashboard:
+        // every roadmap on the left, every account on the right
         if (!me.isAdmin) {
             newRoadmapBtn.style.display = "none";
+        } else {
+            document.getElementById("dash-page").classList.add("wide");
+            document.getElementById("dash-grid").classList.add("admin");
+            document.getElementById("roadmaps-head").style.display = "flex";
+            pageSubtitle.textContent = "Admin";
+            document.getElementById("page-title").textContent = "Everything in Kivo";
+            adminPanel = initAdminPanel(me, loadAndRender);
         }
 
         await loadAndRender();

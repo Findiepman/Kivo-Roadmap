@@ -134,8 +134,16 @@ a {
     background: var(--cloud);
     color: var(--ink-soft);
     text-decoration: none;
-    font-size: 1.05rem;
+    padding: 0;
+    line-height: 0;
+    flex-shrink: 0;
     transition: background 0.15s, color 0.15s;
+}
+
+/* icons are inline SVGs: an SVG centres exactly, a text glyph never does */
+.icon-link svg,
+.btn-close svg {
+    display: block;
 }
 
 .icon-link:hover {
@@ -411,11 +419,15 @@ textarea:focus-visible,
 }
 
 .btn-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
     border: none;
     background: transparent;
     color: var(--ink-soft);
-    font-size: 1.5rem;
-    line-height: 1;
+    line-height: 0;
     width: 34px;
     height: 34px;
     border-radius: 50%;

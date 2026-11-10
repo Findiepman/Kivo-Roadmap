@@ -272,6 +272,190 @@
     font-weight: 600;
 }
 
+/* ---------- admin dashboard: every roadmap + every account ---------- */
+
+.page.wide {
+    max-width: 1240px;
+}
+
+.dash-grid.admin {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: start;
+}
+
+.col-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.25rem;
+    margin-bottom: 1rem;
+}
+
+.col-head h2 {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.col-head .section-count {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    background: var(--cloud);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.12rem 0.6rem;
+}
+
+.push-right {
+    margin-left: auto;
+}
+
+.strip-owner {
+    color: var(--deep);
+}
+
+.account-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.account-card {
+    background: var(--cloud);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.account-top {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    flex-wrap: wrap;
+}
+
+.account-head {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex: 1;
+    min-width: 200px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 0.2rem;
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font: inherit;
+    cursor: pointer;
+}
+
+.account-head:hover {
+    background: var(--paper);
+}
+
+.account-head .chev {
+    display: inline-flex;
+    color: var(--ink-soft);
+    transition: transform 0.15s;
+}
+
+.account-head .chev svg {
+    display: block;
+}
+
+.account-head.open .chev {
+    transform: rotate(90deg);
+}
+
+.person-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.person-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-weight: 700;
+    font-size: 0.97rem;
+    overflow-wrap: anywhere;
+}
+
+.person-sub {
+    color: var(--ink-soft);
+    font-size: 0.84rem;
+}
+
+.user-since {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    font-weight: 500;
+}
+
+.account-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.account-panel {
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+    padding: 0.4rem 0.9rem 0.7rem;
+}
+
+.account-panel .access-empty {
+    padding: 0.5rem 0;
+}
+
+.account-roadmap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+    flex-wrap: wrap;
+}
+
+.account-roadmap + .account-roadmap {
+    border-top: 1px solid var(--line);
+}
+
+.account-roadmap-name {
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: none;
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.account-roadmap-name:hover {
+    color: var(--deep);
+    text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+    .dash-grid.admin {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .account-head .chev {
+        transition: none;
+    }
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 640px) {
@@ -290,5 +474,10 @@
 
     .strip-members {
         margin-left: 0;
+    }
+
+    .account-actions {
+        width: 100%;
+        justify-content: flex-end;
     }
 }

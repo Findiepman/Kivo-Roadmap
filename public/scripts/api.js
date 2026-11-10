@@ -48,6 +48,12 @@ export const api = {
   updateTask: (roadmapId, taskId, data) => request('PUT', `/roadmaps/${roadmapId}/tasks/${taskId}`, data),
   deleteTask: (roadmapId, taskId) => request('DELETE', `/roadmaps/${roadmapId}/tasks/${taskId}`),
 
+  getComments: (roadmapId, taskId) => request('GET', `/roadmaps/${roadmapId}/tasks/${taskId}/comments`),
+  addComment: (roadmapId, taskId, text) =>
+    request('POST', `/roadmaps/${roadmapId}/tasks/${taskId}/comments`, { text }),
+  deleteComment: (roadmapId, taskId, commentId) =>
+    request('DELETE', `/roadmaps/${roadmapId}/tasks/${taskId}/comments/${commentId}`),
+
   getAccess: (roadmapId) => request('GET', `/roadmaps/${roadmapId}/access`),
   addAccess: (roadmapId, username, role = 'editor') =>
     request('POST', `/roadmaps/${roadmapId}/access`, { username, role }),

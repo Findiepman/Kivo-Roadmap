@@ -10,20 +10,24 @@ const router = express.Router();
 router.use(auth);
 
 // GET /api/roadmaps — every roadmap the user owns or has been granted access to.
+// Admins get every roadmap on the install (they have owner access to all).
 router.get('/', (req, res) => {
   const userId = req.user.userId;
+  const admin = isAdmin(userId) ? 1 : 0;
 
   const rows = db
     .prepare(
       `SELECT r.id, r.title, r.description, r.created_at,
-              CASE WHEN r.owner_id = @userId THEN 'owner' ELSE ra.role END AS role
+              r.owner_id AS ownerId, u.username AS ownerUsername,
+              CASE WHEN r.owner_id = @userId OR @admin = 1 THEN 'owner' ELSE ra.role END AS role
        FROM roadmaps r
+       JOIN users u ON u.id = r.owner_id
        LEFT JOIN roadmap_access ra
          ON ra.roadmap_id = r.id AND ra.user_id = @userId
-       WHERE r.owner_id = @userId OR ra.user_id = @userId
+       WHERE @admin = 1 OR r.owner_id = @userId OR ra.user_id = @userId
        ORDER BY r.created_at ASC, r.id ASC`
     )
-    .all({ userId });
+    .all({ userId, admin });
 
   // Attach per-status task counts and member counts for the dashboard.
   if (rows.length) {

@@ -2,6 +2,7 @@
 // auth-redirect behaviour never applies here) — just a plain fetch by token.
 
 import { API_BASE } from "./config.js";
+import { initViewToggle } from "./view-toggle.js";
 
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token");
@@ -32,6 +33,7 @@ function tagColorClass(tag) {
 
 function showUnavailable() {
     if (boardEl) boardEl.style.display = "none";
+    document.getElementById("view-seg").style.display = "none";
     if (unavailableEl) unavailableEl.style.display = "block";
     titleEl.textContent = "Kivo";
     document.title = "Not available - Kivo";
@@ -98,6 +100,7 @@ function renderTaskRow(task) {
 }
 
 function render(data) {
+    initViewToggle();
     titleEl.textContent = data.roadmap.title;
     document.title = `${data.roadmap.title} - Kivo`;
     metaEl.textContent = data.roadmap.description || "";

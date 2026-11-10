@@ -1,5 +1,8 @@
-import { tasksToGroups, tagColorClass, STATUS_KEYS, STATUS_LABELS } from "./storage.js";
+import { tasksToGroups, tagColorClass, formatWhen, STATUS_KEYS, STATUS_LABELS } from "./storage.js";
 import { api } from "./api.js";
+import { attachDrag, clickSuppressed } from "./drag.js";
+import { initViewToggle } from "./view-toggle.js";
+import { svgIcon, ICON } from "./icons.js";
 
 // "Economy, Mining" -> ["Economy", "Mining"]
 function parseTags(value) {
@@ -30,6 +33,19 @@ const statusSeg = document.getElementById("task-status-seg");
 const assigneesGroup = document.getElementById("assignees-group");
 const assigneePicker = document.getElementById("task-assignees");
 
+// comments (inside the task modal)
+const commentsBlock = document.getElementById("comments-block");
+const commentList = document.getElementById("comment-list");
+const commentText = document.getElementById("comment-text");
+const postCommentBtn = document.getElementById("post-comment-btn");
+const commentError = document.getElementById("comment-error");
+
+// delete comment confirmation
+const deleteCommentModal = document.getElementById("delete-comment-modal");
+const closeDeleteCommentBtn = document.getElementById("close-delete-comment-modal");
+const cancelDeleteCommentBtn = document.getElementById("cancel-delete-comment-btn");
+const confirmDeleteCommentBtn = document.getElementById("confirm-delete-comment-btn");
+
 // delete confirmation modal
 const deleteTaskModal = document.getElementById("delete-task-modal");
 const closeDeleteTaskBtn = document.getElementById("close-delete-task-modal");
@@ -42,6 +58,8 @@ let members = [];        // [{ id, username, role }]
 let editingTaskId = null; // null = the modal is creating a new task
 let modalStatus = "planned";
 let taskToDeleteId = null;
+let commentToDeleteId = null;
+let commentsChanged = false; // the comment counts on the rows are stale
 
 function canEdit() {
     return roadmap && (roadmap.role === "owner" || roadmap.role === "editor");
@@ -85,6 +103,7 @@ async function initRoadmapPage() {
     members = memberList || [];
 
     applyRoleUI();
+    initViewToggle();
     renderHeader();
     renderTasks();
 }
@@ -165,6 +184,13 @@ function buildTaskRow(task) {
     const right = document.createElement("span");
     right.className = "row-right";
 
+    if (task.commentCount) {
+        const comments = document.createElement("span");
+        comments.className = "row-meta";
+        comments.textContent = task.commentCount === 1 ? "1 comment" : `${task.commentCount} comments`;
+        right.appendChild(comments);
+    }
+
     // assignee avatars
     if (task.assignees.length) {
         const stack = document.createElement("span");
@@ -226,10 +252,27 @@ function buildTaskRow(task) {
     right.appendChild(pillWrap);
     row.appendChild(right);
 
-    row.addEventListener("click", () => openTaskModal(task));
-    row.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") openTaskModal(task);
+    row.addEventListener("click", () => {
+        if (!clickSuppressed()) openTaskModal(task);
     });
+    row.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && e.target === row) openTaskModal(task);
+    });
+
+    // owners and editors drag a task to any other status
+    if (canEdit()) {
+        row.classList.add("can-drag");
+        attachDrag(row, {
+            status: task.status,
+            onDrop: async (to) => {
+                try {
+                    await api.updateTask(roadmap.id, task.id, { status: to });
+                } finally {
+                    await reloadTasks();
+                }
+            }
+        });
+    }
 
     return row;
 }
@@ -294,6 +337,15 @@ function selectedAssigneeIds() {
     return [...assigneePicker.querySelectorAll("input:checked")].map(i => Number(i.value));
 }
 
+// The description box grows with its text instead of hiding it behind a
+// scrollbar. Only measurable while the modal is open.
+function fitDescription() {
+    taskDesc.style.height = "auto";
+    taskDesc.style.height = `${taskDesc.scrollHeight + 2}px`;
+}
+
+taskDesc.addEventListener("input", fitDescription);
+
 function setModalEditable(editable) {
     taskName.disabled = !editable;
     taskDesc.disabled = !editable;
@@ -316,7 +368,9 @@ function openCreateModal() {
     setModalStatus("planned");
     renderAssigneePicker([]);
     setModalEditable(true);
+    commentsBlock.style.display = "none";
     openModal(taskModal);
+    fitDescription();
     taskName.focus();
 }
 
@@ -334,6 +388,16 @@ function openTaskModal(task) {
     renderAssigneePicker(task.assignees.map(a => a.id));
     setModalEditable(canEdit());
     openModal(taskModal);
+    fitDescription();
+    openComments(task.id);
+}
+
+function closeTaskModal() {
+    closeModal(taskModal);
+    if (commentsChanged) {
+        commentsChanged = false;
+        reloadTasks();
+    }
 }
 
 addTaskBtn.addEventListener("click", openCreateModal);
@@ -363,16 +427,151 @@ saveTaskBtn.addEventListener("click", async () => {
             await api.updateTask(roadmap.id, editingTaskId, payload);
         }
         closeModal(taskModal);
+        commentsChanged = false;
         await reloadTasks();
     } catch (err) {
         taskError.textContent = err.error || "Could not save the task";
     }
 });
 
-closeTaskModalBtn.addEventListener("click", () => closeModal(taskModal));
-cancelTaskBtn.addEventListener("click", () => closeModal(taskModal));
+closeTaskModalBtn.addEventListener("click", closeTaskModal);
+cancelTaskBtn.addEventListener("click", closeTaskModal);
 taskModal.addEventListener("click", (e) => {
-    if (e.target === taskModal) closeModal(taskModal);
+    if (e.target === taskModal) closeTaskModal();
+});
+
+// ===== COMMENTS =====
+// Everyone with access can comment, viewers included. The server decides
+// which comments you may delete (your own; any, as the owner or an admin).
+function renderComments(comments) {
+    commentList.innerHTML = "";
+    if (!comments.length) {
+        const empty = document.createElement("p");
+        empty.className = "access-empty";
+        empty.textContent = "No comments yet.";
+        commentList.appendChild(empty);
+        return;
+    }
+
+    comments.forEach(c => {
+        const item = document.createElement("div");
+        item.className = "comment";
+
+        const avatar = document.createElement("span");
+        avatar.className = "avatar";
+        avatar.textContent = c.username ? c.username.charAt(0) : "?";
+
+        const main = document.createElement("div");
+        main.className = "comment-main";
+
+        const head = document.createElement("div");
+        head.className = "comment-head";
+        const who = document.createElement("strong");
+        who.textContent = c.username || "Deleted account";
+        const when = document.createElement("time");
+        when.textContent = formatWhen(c.created_at);
+        when.title = new Date(c.created_at.replace(" ", "T") + "Z").toLocaleString();
+        head.appendChild(who);
+        head.appendChild(when);
+
+        if (c.canDelete) {
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "comment-del";
+            del.title = "Delete comment";
+            del.setAttribute("aria-label", "Delete comment");
+            del.appendChild(svgIcon(ICON.trash, 14));
+            del.addEventListener("click", () => {
+                commentToDeleteId = c.id;
+                openModal(deleteCommentModal);
+            });
+            head.appendChild(del);
+        }
+
+        const text = document.createElement("p");
+        text.textContent = c.text;
+
+        main.appendChild(head);
+        main.appendChild(text);
+        item.appendChild(avatar);
+        item.appendChild(main);
+        commentList.appendChild(item);
+    });
+    commentList.scrollTop = commentList.scrollHeight;
+}
+
+async function openComments(taskId) {
+    commentsBlock.style.display = "block";
+    commentText.value = "";
+    commentError.textContent = "";
+    commentList.innerHTML = "";
+    const loading = document.createElement("p");
+    loading.className = "access-empty";
+    loading.textContent = "Loading comments...";
+    commentList.appendChild(loading);
+
+    try {
+        const comments = await api.getComments(roadmap.id, taskId);
+        if (editingTaskId !== taskId || !comments) return; // another task opened meanwhile
+        renderComments(comments);
+    } catch (err) {
+        commentList.innerHTML = "";
+        commentError.textContent = err.error || "Could not load the comments";
+    }
+}
+
+let posting = false;
+async function postComment() {
+    if (posting || editingTaskId === null) return;
+    commentError.textContent = "";
+    const text = commentText.value.trim();
+    if (!text) {
+        commentError.textContent = "Write something first";
+        return;
+    }
+    posting = true;
+    postCommentBtn.disabled = true;
+    try {
+        const comments = await api.addComment(roadmap.id, editingTaskId, text);
+        commentText.value = "";
+        commentsChanged = true;
+        if (comments) renderComments(comments);
+    } catch (err) {
+        commentError.textContent = err.error || "Could not post the comment";
+    } finally {
+        posting = false;
+        postCommentBtn.disabled = false;
+    }
+}
+
+postCommentBtn.addEventListener("click", postComment);
+commentText.addEventListener("keydown", (e) => {
+    // Ctrl/Cmd + Enter posts; plain Enter makes a new line
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        postComment();
+    }
+});
+
+confirmDeleteCommentBtn.addEventListener("click", async () => {
+    if (commentToDeleteId === null || editingTaskId === null) return;
+    const id = commentToDeleteId;
+    commentToDeleteId = null;
+    closeModal(deleteCommentModal);
+    commentError.textContent = "";
+    try {
+        const comments = await api.deleteComment(roadmap.id, editingTaskId, id);
+        commentsChanged = true;
+        if (comments) renderComments(comments);
+    } catch (err) {
+        commentError.textContent = err.error || "Could not delete the comment";
+    }
+});
+
+closeDeleteCommentBtn.addEventListener("click", () => closeModal(deleteCommentModal));
+cancelDeleteCommentBtn.addEventListener("click", () => closeModal(deleteCommentModal));
+deleteCommentModal.addEventListener("click", (e) => {
+    if (e.target === deleteCommentModal) closeModal(deleteCommentModal);
 });
 
 // ===== DELETE TASK =====

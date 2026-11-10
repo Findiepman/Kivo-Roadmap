@@ -42,6 +42,7 @@ function serializeTask(row, usersById) {
     position: row.position,
     tags,
     assignees, // [{ id, username }]
+    commentCount: row.comment_count || 0,
     created_at: row.created_at,
   };
 }
@@ -83,7 +84,8 @@ function normalizeAssignees(assignees, memberMap) {
 }
 
 const TASK_FIELDS =
-  'id, roadmap_id, title, description, status, position, tags, assignees, created_at';
+  'id, roadmap_id, title, description, status, position, tags, assignees, created_at, ' +
+  '(SELECT COUNT(*) FROM comments c WHERE c.task_id = tasks.id) AS comment_count';
 
 // GET /api/roadmaps/:id/tasks — any access level may read.
 router.get('/', (req, res) => {
@@ -211,6 +213,97 @@ router.delete('/:taskId', (req, res) => {
   }
 
   res.json({ success: true });
+});
+
+// --- Comments ---
+// Everyone with access to the roadmap (viewers included) may read and post.
+// Authors delete their own comments; the owner (and so any admin) any.
+
+const COMMENT_MAX = 1000;
+
+function findTask(roadmapId, taskId) {
+  return db
+    .prepare('SELECT id FROM tasks WHERE id = ? AND roadmap_id = ?')
+    .get(taskId, roadmapId);
+}
+
+function listComments(taskId, userId, role) {
+  const rows = db
+    .prepare(
+      `SELECT c.id, c.user_id, u.username, c.text, c.created_at
+       FROM comments c LEFT JOIN users u ON u.id = c.user_id
+       WHERE c.task_id = ?
+       ORDER BY c.created_at ASC, c.id ASC`
+    )
+    .all(taskId);
+  return rows.map((c) => ({
+    id: c.id,
+    userId: c.user_id,
+    username: c.username || null, // null = the account was deleted
+    text: c.text,
+    created_at: c.created_at,
+    canDelete: role === 'owner' || (c.user_id !== null && c.user_id === userId),
+  }));
+}
+
+// GET /api/roadmaps/:id/tasks/:taskId/comments — any access level.
+router.get('/:taskId/comments', (req, res) => {
+  const roadmapId = Number(req.params.id);
+  const taskId = Number(req.params.taskId);
+  const role = getRole(roadmapId, req.user.userId);
+  if (!role) return res.status(404).json({ error: 'Roadmap not found' });
+  if (!findTask(roadmapId, taskId)) return res.status(404).json({ error: 'Task not found' });
+
+  res.json(listComments(taskId, req.user.userId, role));
+});
+
+// POST /api/roadmaps/:id/tasks/:taskId/comments — any access level.
+router.post('/:taskId/comments', (req, res) => {
+  const roadmapId = Number(req.params.id);
+  const taskId = Number(req.params.taskId);
+  const role = getRole(roadmapId, req.user.userId);
+  if (!role) return res.status(404).json({ error: 'Roadmap not found' });
+  if (!findTask(roadmapId, taskId)) return res.status(404).json({ error: 'Task not found' });
+
+  const { text } = req.body || {};
+  const clean = typeof text === 'string' ? text.trim() : '';
+  if (!clean) {
+    return res.status(400).json({ error: 'Write something first' });
+  }
+  if (clean.length > COMMENT_MAX) {
+    return res.status(400).json({ error: `Comments can be at most ${COMMENT_MAX} characters` });
+  }
+
+  db.prepare('INSERT INTO comments (task_id, user_id, text) VALUES (?, ?, ?)').run(
+    taskId,
+    req.user.userId,
+    clean
+  );
+
+  res.status(201).json(listComments(taskId, req.user.userId, role));
+});
+
+// DELETE /api/roadmaps/:id/tasks/:taskId/comments/:commentId — the author,
+// or the roadmap owner.
+router.delete('/:taskId/comments/:commentId', (req, res) => {
+  const roadmapId = Number(req.params.id);
+  const taskId = Number(req.params.taskId);
+  const commentId = Number(req.params.commentId);
+  const role = getRole(roadmapId, req.user.userId);
+  if (!role) return res.status(404).json({ error: 'Roadmap not found' });
+  if (!findTask(roadmapId, taskId)) return res.status(404).json({ error: 'Task not found' });
+
+  const comment = db
+    .prepare('SELECT id, user_id FROM comments WHERE id = ? AND task_id = ?')
+    .get(commentId, taskId);
+  if (!comment) return res.status(404).json({ error: 'Comment not found' });
+
+  if (role !== 'owner' && comment.user_id !== req.user.userId) {
+    return res.status(403).json({ error: 'You can only delete your own comments' });
+  }
+
+  db.prepare('DELETE FROM comments WHERE id = ?').run(commentId);
+  res.json(listComments(taskId, req.user.userId, role));
 });
 
 module.exports = router;

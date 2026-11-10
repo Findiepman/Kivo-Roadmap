@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" sizes="32x32" href="public/favicon-lion-32.png">
+    <link rel="icon" type="image/svg+xml" href="public/favicon.svg">
 </head>
 
 <body class="sky-body">
@@ -23,42 +23,46 @@
             </div>
         </div>
         <div class="topbar-right">
+            <div class="view-seg" id="view-seg" role="group" aria-label="Layout">
+                <button type="button" data-view="list">List</button>
+                <button type="button" data-view="board">Board</button>
+            </div>
             <span class="brand">Kivo<span class="brand-dot">.</span></span>
         </div>
     </header>
 
     <main class="page" id="board-container">
+        <div class="list-view" id="task-view">
+            <section class="status-section" data-status="planned">
+                <div class="section-header">
+                    <span class="section-dot planned"></span>
+                    <h2>Planned</h2>
+                    <span class="section-count" id="count-planned">0</span>
+                </div>
+                <div class="task-rows" id="rows-planned"></div>
+                <p class="section-empty" id="empty-planned">Nothing planned yet.</p>
+            </section>
 
-        <section class="status-section" data-status="planned">
-            <div class="section-header">
-                <span class="section-dot planned"></span>
-                <h2>Planned</h2>
-                <span class="section-count" id="count-planned">0</span>
-            </div>
-            <div class="task-rows" id="rows-planned"></div>
-            <p class="section-empty" id="empty-planned">Nothing planned yet.</p>
-        </section>
+            <section class="status-section" data-status="in_progress">
+                <div class="section-header">
+                    <span class="section-dot in_progress"></span>
+                    <h2>In progress</h2>
+                    <span class="section-count" id="count-in_progress">0</span>
+                </div>
+                <div class="task-rows" id="rows-in_progress"></div>
+                <p class="section-empty" id="empty-in_progress">Nothing is being worked on right now.</p>
+            </section>
 
-        <section class="status-section" data-status="in_progress">
-            <div class="section-header">
-                <span class="section-dot in_progress"></span>
-                <h2>In progress</h2>
-                <span class="section-count" id="count-in_progress">0</span>
-            </div>
-            <div class="task-rows" id="rows-in_progress"></div>
-            <p class="section-empty" id="empty-in_progress">Nothing is being worked on right now.</p>
-        </section>
-
-        <section class="status-section" data-status="finished">
-            <div class="section-header">
-                <span class="section-dot finished"></span>
-                <h2>Finished</h2>
-                <span class="section-count" id="count-finished">0</span>
-            </div>
-            <div class="task-rows" id="rows-finished"></div>
-            <p class="section-empty" id="empty-finished">Nothing finished yet.</p>
-        </section>
-
+            <section class="status-section" data-status="finished">
+                <div class="section-header">
+                    <span class="section-dot finished"></span>
+                    <h2>Finished</h2>
+                    <span class="section-count" id="count-finished">0</span>
+                </div>
+                <div class="task-rows" id="rows-finished"></div>
+                <p class="section-empty" id="empty-finished">Nothing finished yet.</p>
+            </section>
+        </div>
     </main>
 
     <!-- Shown when the token is invalid/disabled -->
@@ -72,7 +76,7 @@
         <div class="modal-card">
             <div class="modal-header">
                 <h3 id="modal-task-title"></h3>
-                <button id="close-task-modal" class="btn-close" aria-label="Close">&times;</button>
+                <button id="close-task-modal" class="btn-close" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
             </div>
             <div class="modal-body">
                 <p class="delete-warning" id="modal-task-desc"></p>

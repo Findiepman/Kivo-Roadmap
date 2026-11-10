@@ -53,8 +53,19 @@ db.exec(`
     PRIMARY KEY (roadmap_id, user_id)
   );
 
+  -- user_id goes NULL when the account is deleted, so the thread keeps the
+  -- comment and shows it as from a deleted account.
+  CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    text TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE INDEX IF NOT EXISTS idx_tasks_roadmap ON tasks(roadmap_id);
   CREATE INDEX IF NOT EXISTS idx_access_user ON roadmap_access(user_id);
+  CREATE INDEX IF NOT EXISTS idx_comments_task ON comments(task_id);
 `);
 
 // --- Migrations ---

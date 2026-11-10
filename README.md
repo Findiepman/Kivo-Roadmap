@@ -9,8 +9,10 @@ tasks to members and publish read-only public links.
 ## Features
 
 - **Accounts** — created by an admin (no self-service sign-up), JWT auth (30-day tokens)
-- **Admin panel** — admins create accounts, change any username or password and delete accounts, all from Settings
+- **Admin dashboard** — an admin's home page shows every roadmap on the install next to every account; admins create accounts, change any username or password, delete accounts and see (and remove) who is on which roadmap
 - **Roadmaps & tasks** — admins create roadmaps; tasks move between planned, in progress and finished
+- **List or board** — view a roadmap as a list or as a kanban board (remembered per browser); owners and editors drag tasks between statuses
+- **Comments** — everyone on a roadmap, viewers included, can comment on its tasks; you delete your own comments, the owner and admins any
 - **Assignees** — on shared roadmaps every member can pick who is working on a task
 - **Sharing** — share a roadmap with an account by username, or publish a read-only public link
 - **Real persistence** — SQLite database (not browser localStorage), so data is shared across devices
@@ -35,9 +37,9 @@ server/            Express API
   routes/          auth.js, admin.js, roadmaps.js, tasks.js, access.js, public.js
 public/            frontend (served as static files)
   index.html       login
-  dashboard.html   roadmap list + sharing
-  roadmap.html     task list grouped by status
-  settings.html    account info + admin panel
+  dashboard.html   roadmap list + sharing (admins: every roadmap + every account)
+  roadmap.html     tasks grouped by status, as a list or a board, with comments
+  settings.html    account info
   view.html        public read-only view
   scripts/, styles/
 data/              SQLite db (gitignored, created at runtime)
@@ -52,7 +54,7 @@ is completely empty, the first admin account is created automatically with
 `BOOTSTRAP_ADMIN_PASSWORD` so you can log in.
 
 Admins can create roadmaps, manage every account (including their own) from the
-admin panel in Settings, and have full access to all roadmaps.
+admin dashboard, and have full access to all roadmaps.
 
 ## Running with Docker (recommended)
 
@@ -83,12 +85,14 @@ All `/api/*` routes except login and the public view require
 | POST | `/api/auth/login` | anyone |
 | GET | `/api/auth/me` | authed |
 | GET/POST/PUT/DELETE | `/api/admin/users[/:id]` | admin only |
-| GET/POST | `/api/roadmaps` | authed (list = owned + shared; create = admin) |
+| GET/POST | `/api/roadmaps` | authed (list = owned + shared, admins all; create = admin) |
 | GET | `/api/roadmaps/:id` | owner / editor / viewer |
 | GET | `/api/roadmaps/:id/members` | any access |
 | PUT/DELETE | `/api/roadmaps/:id` | owner only |
 | GET | `/api/roadmaps/:id/tasks` | any access |
 | POST/PUT/DELETE | `/api/roadmaps/:id/tasks[/:taskId]` | owner / editor |
+| GET/POST | `/api/roadmaps/:id/tasks/:taskId/comments` | any access |
+| DELETE | `/api/roadmaps/:id/tasks/:taskId/comments/:commentId` | the comment's author, or owner |
 | GET/POST | `/api/roadmaps/:id/access` | owner only |
 | DELETE | `/api/roadmaps/:id/access/:userId` | owner only |
 | GET/POST/DELETE | `/api/roadmaps/:id/share` | owner only |

@@ -17,6 +17,8 @@ export function roadmapFromApi(r) {
         name: r.title,
         desc: r.description || "",
         role: r.role,
+        ownerId: r.ownerId,
+        ownerUsername: r.ownerUsername || "",
         memberCount: r.memberCount || 1,
         counts: r.counts || { planned: 0, in_progress: 0, finished: 0, total: 0 }
     };
@@ -31,6 +33,7 @@ export function taskFromApi(t) {
         status: t.status,
         tags: Array.isArray(t.tags) ? t.tags : [],
         assignees: Array.isArray(t.assignees) ? t.assignees : [],
+        commentCount: t.commentCount || 0,
         position: t.position
     };
 }
@@ -57,4 +60,19 @@ export function tagColorClass(tag) {
         hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
     }
     return "tag-c" + (hash % 8);
+}
+
+// "2026-06-12 12:33:10" (UTC) -> "3 minutes ago" / local date
+export function formatWhen(ts) {
+    if (!ts) return "";
+    const when = new Date(ts.replace(" ", "T") + "Z");
+    const diff = Date.now() - when.getTime();
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return "just now";
+    if (min < 60) return `${min} minute${min === 1 ? "" : "s"} ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr} hour${hr === 1 ? "" : "s"} ago`;
+    const days = Math.floor(hr / 24);
+    if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
+    return when.toLocaleDateString();
 }

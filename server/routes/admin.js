@@ -35,12 +35,31 @@ function serializeUser(u) {
   };
 }
 
-// GET /api/admin/users — every account.
+// GET /api/admin/users — every account (admins first), each with the roadmaps
+// it owns or has been added to.
 router.get('/users', (req, res) => {
   const rows = db
-    .prepare('SELECT id, username, is_admin, created_at FROM users ORDER BY created_at ASC, id ASC')
+    .prepare(
+      'SELECT id, username, is_admin, created_at FROM users ORDER BY is_admin DESC, created_at ASC, id ASC'
+    )
     .all();
-  res.json(rows.map(serializeUser));
+
+  const memberships = db
+    .prepare(
+      `SELECT r.owner_id AS user_id, r.id, r.title, 'owner' AS role FROM roadmaps r
+       UNION ALL
+       SELECT ra.user_id, r.id, r.title, ra.role FROM roadmap_access ra
+       JOIN roadmaps r ON r.id = ra.roadmap_id
+       ORDER BY title COLLATE NOCASE ASC`
+    )
+    .all();
+  const byUser = new Map();
+  for (const m of memberships) {
+    if (!byUser.has(m.user_id)) byUser.set(m.user_id, []);
+    byUser.get(m.user_id).push({ id: m.id, title: m.title, role: m.role });
+  }
+
+  res.json(rows.map((u) => ({ ...serializeUser(u), roadmaps: byUser.get(u.id) || [] })));
 });
 
 // POST /api/admin/users — create an account.
