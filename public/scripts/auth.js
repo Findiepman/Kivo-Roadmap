@@ -44,7 +44,8 @@ async function checkExistingSession() {
             window.location.href = "dashboard.html";
         }
     } catch (err) {
-        localStorage.removeItem("kivo_token");
+        // A 401 already cleared the token inside api.js. Anything else (offline,
+        // rate limit) keeps it: the session may still be fine.
     }
 }
 

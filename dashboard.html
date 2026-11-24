@@ -78,11 +78,11 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="new-username">Username</label>
-                    <input type="text" id="new-username" placeholder="at least 3 characters" autocomplete="off" />
+                    <input type="text" id="new-username" maxlength="32" placeholder="3 to 32 characters" autocomplete="off" />
                 </div>
                 <div class="form-group">
                     <label for="new-password">Password</label>
-                    <input type="password" id="new-password" placeholder="at least 6 characters" autocomplete="new-password" />
+                    <input type="password" id="new-password" maxlength="72" placeholder="at least 10 characters" autocomplete="new-password" />
                 </div>
                 <p class="form-error" id="new-account-error"></p>
             </div>
@@ -103,11 +103,15 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="edit-username">Username</label>
-                    <input type="text" id="edit-username" autocomplete="off" />
+                    <input type="text" id="edit-username" maxlength="32" autocomplete="off" />
                 </div>
                 <div class="form-group">
                     <label for="edit-password">New password</label>
-                    <input type="password" id="edit-password" placeholder="leave empty to keep the current one" autocomplete="new-password" />
+                    <input type="password" id="edit-password" maxlength="72" placeholder="leave empty to keep it (new one: 10+ characters)" autocomplete="new-password" />
+                </div>
+                <div class="form-group" id="edit-current-group" style="display:none;">
+                    <label for="edit-current-password">Your own current password</label>
+                    <input type="password" id="edit-current-password" maxlength="1024" placeholder="needed to change an admin account" autocomplete="current-password" />
                 </div>
                 <div class="form-group">
                     <label id="edit-color-label">Avatar color</label>
@@ -132,6 +136,11 @@
             </div>
             <div class="modal-body">
                 <p class="delete-warning" id="delete-user-warning"></p>
+                <div class="form-group" id="delete-current-group" style="display:none;">
+                    <label for="delete-current-password">Your own current password</label>
+                    <input type="password" id="delete-current-password" maxlength="1024" placeholder="needed to delete an admin account" autocomplete="current-password" />
+                </div>
+                <p class="form-error" id="delete-user-error"></p>
             </div>
             <div class="modal-footer">
                 <button id="cancel-delete-user" class="btn-ghost">Cancel</button>
@@ -150,11 +159,11 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="roadmap-name">Name</label>
-                    <input type="text" id="roadmap-name" placeholder="e.g. Server roadmap" />
+                    <input type="text" id="roadmap-name" maxlength="200" placeholder="e.g. Server roadmap" />
                 </div>
                 <div class="form-group">
                     <label for="roadmap-description">Description</label>
-                    <textarea id="roadmap-description" rows="3" placeholder="What is this roadmap about?"></textarea>
+                    <textarea id="roadmap-description" maxlength="2000" rows="3" placeholder="What is this roadmap about?"></textarea>
                 </div>
                 <p class="form-error" id="create-error"></p>
             </div>
@@ -175,12 +184,13 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="rename-roadmap-name">Name</label>
-                    <input type="text" id="rename-roadmap-name" />
+                    <input type="text" id="rename-roadmap-name" maxlength="200" />
                 </div>
                 <div class="form-group">
                     <label for="rename-roadmap-description">Description</label>
-                    <textarea id="rename-roadmap-description" rows="3"></textarea>
+                    <textarea id="rename-roadmap-description" maxlength="2000" rows="3"></textarea>
                 </div>
+                <p class="form-error" id="rename-error"></p>
             </div>
             <div class="modal-footer">
                 <button id="cancel-rename-btn" class="btn-ghost">Cancel</button>
@@ -217,7 +227,7 @@
                 <div class="form-group">
                     <label for="access-username">Add a member by username</label>
                     <div class="access-add-row">
-                        <input type="text" id="access-username" placeholder="username" />
+                        <input type="text" id="access-username" maxlength="32" placeholder="username" />
                         <button id="access-add-btn" class="btn btn-small">Add</button>
                     </div>
                 </div>

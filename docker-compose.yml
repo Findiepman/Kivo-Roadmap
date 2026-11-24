@@ -6,17 +6,24 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - NODE_ENV=production
       - ADMIN_USERNAMES=${ADMIN_USERNAMES:-}
-      - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
+      # Only used when the database has no accounts yet; the app refuses to
+      # start on an empty database without a real value.
+      - BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD:-}
     volumes:
       - ./data:/app/data
+    security_opt:
+      - no-new-privileges:true
     # Not published to the host — cloudflared reaches it over the internal
     # Docker network at http://app:3000.
 
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    # Pinned so a new upstream release never lands unreviewed; bump on purpose.
+    image: cloudflare/cloudflared:2026.11.2
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       - app

@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { paintAvatar } from "./avatars.js";
+import { logout } from "./logout.js";
 
 // ===== DOM =====
 const meAvatar = document.getElementById("me-avatar");
@@ -32,9 +33,6 @@ async function init() {
 }
 
 // ===== LOGOUT =====
-document.getElementById("logout-btn").addEventListener("click", () => {
-    localStorage.removeItem("kivo_token");
-    window.location.href = "index.html";
-});
+document.getElementById("logout-btn").addEventListener("click", logout);
 
 init();

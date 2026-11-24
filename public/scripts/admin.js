@@ -30,6 +30,8 @@ export function initAdminPanel(me, onChange) {
     const editUsername = document.getElementById("edit-username");
     const editPassword = document.getElementById("edit-password");
     const editColorPicker = document.getElementById("edit-color-picker");
+    const editCurrentGroup = document.getElementById("edit-current-group");
+    const editCurrentPassword = document.getElementById("edit-current-password");
     const editError = document.getElementById("edit-user-error");
     const saveEditBtn = document.getElementById("save-edit-user");
     const cancelEditBtn = document.getElementById("cancel-edit-user");
@@ -38,6 +40,9 @@ export function initAdminPanel(me, onChange) {
     // delete modal
     const deleteModal = document.getElementById("delete-user-modal");
     const deleteWarning = document.getElementById("delete-user-warning");
+    const deleteCurrentGroup = document.getElementById("delete-current-group");
+    const deleteCurrentPassword = document.getElementById("delete-current-password");
+    const deleteError = document.getElementById("delete-user-error");
     const confirmDeleteBtn = document.getElementById("confirm-delete-user");
     const cancelDeleteBtn = document.getElementById("cancel-delete-user");
     const closeDeleteBtn = document.getElementById("close-delete-user");
@@ -50,7 +55,11 @@ export function initAdminPanel(me, onChange) {
     accountsCol.style.display = "block";
 
     function openModal(m) { m.classList.add("open"); }
-    function closeModal(m) { m.classList.remove("open"); }
+    function closeModal(m) {
+        m.classList.remove("open");
+        // never leave a typed password sitting in a hidden form
+        m.querySelectorAll('input[type="password"]').forEach((i) => { i.value = ""; });
+    }
 
     function el(tag, className, text) {
         const node = document.createElement(tag);
@@ -201,11 +210,19 @@ export function initAdminPanel(me, onChange) {
     });
 
     // ===== EDIT ACCOUNT =====
+    // same rule as the server: your own account and other admin accounts
+    function needsMyPassword(user) {
+        return user.id === me.id || !!user.isAdmin;
+    }
+
     function openEditModal(user) {
         userToEdit = user;
         editTitle.textContent = `Edit ${user.username}`;
         editUsername.value = user.username;
         editPassword.value = "";
+        editCurrentPassword.value = "";
+        // changes to your own or another admin account need your password
+        editCurrentGroup.style.display = needsMyPassword(user) ? "flex" : "none";
         editError.textContent = "";
         editColor = user.color || null;
         renderColorPicker();
@@ -294,8 +311,23 @@ export function initAdminPanel(me, onChange) {
             return;
         }
 
+        // a new name or password needs your own password (a colour alone does not)
+        const touchesLogin = data.username !== undefined || data.password !== undefined;
+        if (touchesLogin && needsMyPassword(userToEdit)) {
+            if (!editCurrentPassword.value) {
+                editError.textContent = "Enter your own current password to change an admin account";
+                return;
+            }
+            data.currentPassword = editCurrentPassword.value;
+        }
+
+        // one request at a time: a double click could otherwise store an older token
+        saveEditBtn.disabled = true;
         try {
             const updated = await api.adminUpdateUser(userToEdit.id, data);
+            // changed your own password: the server ended all your sessions and
+            // sent a fresh token for this one
+            if (updated && updated.token) localStorage.setItem("kivo_token", updated.token);
             closeModal(editModal);
             if (userToEdit.id === me.id && updated) {
                 // renamed yourself: keep the top bar in step
@@ -308,6 +340,8 @@ export function initAdminPanel(me, onChange) {
             await onChange();
         } catch (err) {
             editError.textContent = err.error || "Could not save the changes";
+        } finally {
+            saveEditBtn.disabled = false;
         }
     });
 
@@ -324,17 +358,27 @@ export function initAdminPanel(me, onChange) {
         deleteWarning.textContent = owned
             ? `This deletes ${user.username} and the ${owned === 1 ? "roadmap" : `${owned} roadmaps`} they own. There is no undo.`
             : `This deletes ${user.username}. There is no undo.`;
+        deleteCurrentPassword.value = "";
+        deleteError.textContent = "";
+        deleteCurrentGroup.style.display = needsMyPassword(user) ? "flex" : "none";
         openModal(deleteModal);
     }
 
     confirmDeleteBtn.addEventListener("click", async () => {
         if (!userToDelete) return;
         adminError.textContent = "";
+        deleteError.textContent = "";
         const target = userToDelete;
-        userToDelete = null;
-        closeModal(deleteModal);
+        const needsPassword = needsMyPassword(target);
+        if (needsPassword && !deleteCurrentPassword.value) {
+            deleteError.textContent = "Enter your own current password to delete an admin account";
+            return;
+        }
+        confirmDeleteBtn.disabled = true;
         try {
-            await api.adminDeleteUser(target.id);
+            await api.adminDeleteUser(target.id, needsPassword ? deleteCurrentPassword.value : undefined);
+            userToDelete = null;
+            closeModal(deleteModal);
             if (target.id === me.id) {
                 // deleted your own account: session is gone
                 localStorage.removeItem("kivo_token");
@@ -344,7 +388,10 @@ export function initAdminPanel(me, onChange) {
             expanded.delete(target.id);
             await onChange();
         } catch (err) {
-            adminError.textContent = err.error || "Could not delete the account";
+            // keep the modal open so a wrong password can be retyped
+            deleteError.textContent = err.error || "Could not delete the account";
+        } finally {
+            confirmDeleteBtn.disabled = false;
         }
     });
 

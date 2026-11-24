@@ -6,7 +6,8 @@ const bcrypt = require('bcryptjs');
 // Resolve the data directory relative to the project root (one level up from /server)
 const dataDir = path.join(__dirname, '..', 'data');
 if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+  // Only the app may read the database (it holds password hashes).
+  fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
 }
 
 const dbPath = path.join(dataDir, 'kivo.db');
@@ -23,6 +24,7 @@ db.exec(`
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     is_admin INTEGER NOT NULL DEFAULT 0,
+    token_version INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -78,6 +80,11 @@ if (!userCols.some((c) => c.name === 'is_admin')) {
 // users.color: avatar colour picked by an admin ("#rrggbb"). NULL = automatic.
 if (!userCols.some((c) => c.name === 'color')) {
   db.exec('ALTER TABLE users ADD COLUMN color TEXT');
+}
+// users.token_version: part of every login token; bumping it revokes all of
+// the account's sessions (password change, logout).
+if (!userCols.some((c) => c.name === 'token_version')) {
+  db.exec('ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0');
 }
 
 // public_token: when set, the roadmap is viewable read-only by anyone holding
@@ -140,25 +147,38 @@ if (taskCols.length && !taskCols.some((c) => c.name === 'status')) {
 }
 
 // --- Admin seeding ---
-// Grant admin status to the usernames in ADMIN_USERNAMES (default: 81hp_).
+// ADMIN_USERNAMES (default: 81hp_) only matters while the install has no admin
+// at all: then those exact usernames become admin. Once an admin exists, the
+// admin panel is the only place admin status is managed, so renaming or
+// creating an account with a seeded name never grants admin on a restart.
 const seedAdmins = (process.env.ADMIN_USERNAMES || '81hp_')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 
-const grantAdmin = db.prepare(
-  'UPDATE users SET is_admin = 1 WHERE lower(username) = lower(?)'
-);
-for (const name of seedAdmins) {
-  grantAdmin.run(name);
+const adminCount = db.prepare('SELECT COUNT(*) AS c FROM users WHERE is_admin = 1').get().c;
+if (adminCount === 0) {
+  const grantAdmin = db.prepare('UPDATE users SET is_admin = 1 WHERE username = ?');
+  for (const name of seedAdmins) {
+    grantAdmin.run(name);
+  }
 }
 
 // Bootstrap: a fresh database has no accounts and sign-up does not exist, so
-// create the first admin account. Password comes from BOOTSTRAP_ADMIN_PASSWORD.
+// create the first admin account. Password comes from BOOTSTRAP_ADMIN_PASSWORD
+// and must be a real one: this repo is public, so a well-known default would
+// let anyone log in as admin on a fresh install.
 const userCount = db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
 if (userCount === 0) {
   const username = seedAdmins[0] || '81hp_';
-  const password = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'change-me-now';
+  const password = process.env.BOOTSTRAP_ADMIN_PASSWORD || '';
+  if (password.length < 12 || password === 'change-me-now') {
+    console.error(
+      'FATAL: the database has no accounts yet. Set BOOTSTRAP_ADMIN_PASSWORD to a ' +
+        'password of at least 12 characters (not the example value) to create the first admin.'
+    );
+    process.exit(1);
+  }
   const hash = bcrypt.hashSync(password, 12);
   db.prepare(
     'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, 1)'

@@ -35,6 +35,7 @@ export const api = {
   login: (username, password) =>
     request('POST', '/auth/login', { username, password }, { skipAuthRedirect: true }),
   me: () => request('GET', '/auth/me'),
+  logout: () => request('POST', '/auth/logout', null, { skipAuthRedirect: true }),
 
   getRoadmaps: () => request('GET', '/roadmaps'),
   createRoadmap: (data) => request('POST', '/roadmaps', data),
@@ -67,5 +68,6 @@ export const api = {
   adminListUsers: () => request('GET', '/admin/users'),
   adminCreateUser: (username, password) => request('POST', '/admin/users', { username, password }),
   adminUpdateUser: (id, data) => request('PUT', `/admin/users/${id}`, data),
-  adminDeleteUser: (id) => request('DELETE', `/admin/users/${id}`),
+  adminDeleteUser: (id, currentPassword) =>
+    request('DELETE', `/admin/users/${id}`, currentPassword ? { currentPassword } : undefined),
 }

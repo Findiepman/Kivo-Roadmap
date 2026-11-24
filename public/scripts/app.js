@@ -1,6 +1,7 @@
 import { state } from "./state.js";
 import { roadmapFromApi, formatWhen } from "./storage.js";
 import { api } from "./api.js";
+import { logout } from "./logout.js";
 import { initAdminPanel } from "./admin.js";
 import { resolveAvatarColors, paintAvatar } from "./avatars.js";
 
@@ -37,6 +38,7 @@ function initDashboard() {
     const renameModal = document.getElementById("rename-modal");
     const renameName = document.getElementById("rename-roadmap-name");
     const renameDesc = document.getElementById("rename-roadmap-description");
+    const renameError = document.getElementById("rename-error");
     const renameBtn = document.getElementById("rename-btn");
     const cancelRenameBtn = document.getElementById("cancel-rename-btn");
     const closeRenameBtn = document.getElementById("close-rename-modal");
@@ -298,6 +300,7 @@ function initDashboard() {
         roadmapToRename = roadmap;
         renameName.value = roadmap.name;
         renameDesc.value = roadmap.desc;
+        renameError.textContent = "";
         openModal(renameModal);
     }
 
@@ -305,11 +308,17 @@ function initDashboard() {
         if (!roadmapToRename) return;
         const newName = renameName.value.trim();
         if (!newName) return;
+        renameError.textContent = "";
 
-        await api.updateRoadmap(roadmapToRename.id, {
-            title: newName,
-            description: renameDesc.value
-        });
+        try {
+            await api.updateRoadmap(roadmapToRename.id, {
+                title: newName,
+                description: renameDesc.value
+            });
+        } catch (err) {
+            renameError.textContent = (err && err.error) || "Could not save the changes";
+            return;
+        }
 
         closeModalEl(renameModal);
         roadmapToRename = null;
@@ -504,10 +513,7 @@ function initDashboard() {
 
     // ===== LOGOUT =====
     const logoutBtn = document.getElementById("logout-btn");
-    logoutBtn.addEventListener("click", () => {
-        localStorage.removeItem("kivo_token");
-        window.location.href = "index.html";
-    });
+    logoutBtn.addEventListener("click", logout);
 
     // ===== DATA =====
     async function loadAndRender() {

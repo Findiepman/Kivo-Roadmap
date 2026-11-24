@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { getRole, canWrite } = require('../permissions');
+const { LIMITS, tooLong } = require('../validate');
 
 // mergeParams so we can read :id (the roadmap id) from the parent mount path.
 const router = express.Router({ mergeParams: true });
@@ -49,11 +50,33 @@ function serializeTask(row, usersById) {
 
 function normalizeTags(tags) {
   if (!Array.isArray(tags)) return '[]';
-  const clean = tags
-    .filter((t) => typeof t === 'string')
-    .map((t) => t.trim())
-    .filter(Boolean);
+  const clean = [];
+  for (const t of tags) {
+    if (typeof t !== 'string') continue;
+    const tag = t.trim();
+    if (tag && !clean.includes(tag)) clean.push(tag);
+  }
   return JSON.stringify(clean);
+}
+
+// Returns an error message when the task fields are too big, else null.
+function taskFieldError({ title, description, tags }) {
+  if (description !== undefined && description !== null && typeof description !== 'string') {
+    return 'Description must be text';
+  }
+  const lenError =
+    tooLong(typeof title === 'string' ? title.trim() : title, LIMITS.TASK_TITLE_MAX, 'Task name') ||
+    tooLong(description, LIMITS.TASK_DESC_MAX, 'Description');
+  if (lenError) return lenError;
+  if (Array.isArray(tags)) {
+    if (tags.length > LIMITS.TAGS_MAX) return `A task can have at most ${LIMITS.TAGS_MAX} tags`;
+    for (const t of tags) {
+      if (typeof t === 'string' && t.trim().length > LIMITS.TAG_MAX) {
+        return `Tags can be at most ${LIMITS.TAG_MAX} characters`;
+      }
+    }
+  }
+  return null;
 }
 
 // Roadmap members = owner + everyone with an access row. Assignees are
@@ -119,6 +142,8 @@ router.post('/', (req, res) => {
   if (!title || typeof title !== 'string' || !title.trim()) {
     return res.status(400).json({ error: 'Task name is required' });
   }
+  const fieldError = taskFieldError({ title, description, tags });
+  if (fieldError) return res.status(400).json({ error: fieldError });
   const st = STATUSES.includes(status) ? status : 'planned';
   const usersById = getMemberMap(roadmapId);
 
@@ -167,6 +192,8 @@ router.put('/:taskId', (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Task not found' });
 
   const { title, description, status, tags, assignees } = req.body || {};
+  const fieldError = taskFieldError({ title, description, tags });
+  if (fieldError) return res.status(400).json({ error: fieldError });
   const usersById = getMemberMap(roadmapId);
 
   const newTitle =
@@ -221,7 +248,7 @@ router.delete('/:taskId', (req, res) => {
 // Everyone with access to the roadmap (viewers included) may read and post.
 // Authors delete their own comments; the owner (and so any admin) any.
 
-const COMMENT_MAX = 1000;
+const COMMENT_MAX = LIMITS.COMMENT_MAX;
 
 function findTask(roadmapId, taskId) {
   return db

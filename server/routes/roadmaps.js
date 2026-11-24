@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { getRole, isAdmin } = require('../permissions');
+const { LIMITS, tooLong } = require('../validate');
 
 const router = express.Router();
 
@@ -86,6 +87,13 @@ router.post('/', (req, res) => {
   if (!title || typeof title !== 'string' || !title.trim()) {
     return res.status(400).json({ error: 'Title is required' });
   }
+  if (description !== undefined && description !== null && typeof description !== 'string') {
+    return res.status(400).json({ error: 'Description must be text' });
+  }
+  const lenError =
+    tooLong(title.trim(), LIMITS.ROADMAP_TITLE_MAX, 'Title') ||
+    tooLong(description, LIMITS.ROADMAP_DESC_MAX, 'Description');
+  if (lenError) return res.status(400).json({ error: lenError });
 
   const result = db
     .prepare('INSERT INTO roadmaps (owner_id, title, description) VALUES (?, ?, ?)')
@@ -153,6 +161,13 @@ router.put('/:id', (req, res) => {
   if (!title || typeof title !== 'string' || !title.trim()) {
     return res.status(400).json({ error: 'Title is required' });
   }
+  if (description !== undefined && description !== null && typeof description !== 'string') {
+    return res.status(400).json({ error: 'Description must be text' });
+  }
+  const lenError =
+    tooLong(title.trim(), LIMITS.ROADMAP_TITLE_MAX, 'Title') ||
+    tooLong(description, LIMITS.ROADMAP_DESC_MAX, 'Description');
+  if (lenError) return res.status(400).json({ error: lenError });
 
   db.prepare('UPDATE roadmaps SET title = ?, description = ? WHERE id = ?').run(
     title.trim(),
