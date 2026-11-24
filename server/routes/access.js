@@ -25,7 +25,7 @@ router.use(requireOwner);
 function listAccess(roadmapId) {
   return db
     .prepare(
-      `SELECT u.id AS userId, u.username AS username, ra.role AS role
+      `SELECT u.id AS userId, u.username AS username, u.color AS color, ra.role AS role
        FROM roadmap_access ra
        JOIN users u ON u.id = ra.user_id
        WHERE ra.roadmap_id = ?

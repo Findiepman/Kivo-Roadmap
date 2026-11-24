@@ -2,6 +2,7 @@ import { state } from "./state.js";
 import { roadmapFromApi, formatWhen } from "./storage.js";
 import { api } from "./api.js";
 import { initAdminPanel } from "./admin.js";
+import { resolveAvatarColors, paintAvatar } from "./avatars.js";
 
 // Dashboard page logic. Bail out if this script is loaded anywhere else.
 const listEl = document.getElementById("roadmap-list");
@@ -350,8 +351,15 @@ function initDashboard() {
     async function renderAccessList() {
         accessList.innerHTML = "";
         let users = [];
+        let colors = new Map();
         try {
-            users = await api.getAccess(accessRoadmapId);
+            const [access, memberList] = await Promise.all([
+                api.getAccess(accessRoadmapId),
+                api.getMembers(accessRoadmapId).catch(() => [])
+            ]);
+            users = access;
+            // same colours as on the roadmap itself (owner included)
+            colors = resolveAvatarColors(memberList || []);
         } catch (err) {
             accessError.textContent = err.error || "Could not load the member list";
             return;
@@ -374,7 +382,7 @@ function initDashboard() {
 
             const avatar = document.createElement("span");
             avatar.className = "avatar";
-            avatar.textContent = (u.username || "?").charAt(0);
+            paintAvatar(avatar, u.username, colors.has(u.userId) ? colors.get(u.userId) : u.color);
 
             const name = document.createElement("span");
             name.textContent = u.username;
@@ -524,7 +532,7 @@ function initDashboard() {
         const userLabel = document.getElementById("topbar-username");
         if (userLabel) userLabel.textContent = me.username;
         const avatar = document.getElementById("user-avatar");
-        if (avatar) avatar.textContent = (me.username || "?").charAt(0);
+        if (avatar) paintAvatar(avatar, me.username, me.color);
 
         // only admins may create roadmaps; they also get the admin dashboard:
         // every roadmap on the left, every account on the right

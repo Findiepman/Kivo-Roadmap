@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { svgIcon, ICON } from "./icons.js";
+import { AVATAR_PALETTE, paintAvatar } from "./avatars.js";
 
 // Accounts column of the admin dashboard: every account on the install, with
 // create / edit / delete, and per account the roadmaps it is on.
@@ -28,6 +29,7 @@ export function initAdminPanel(me, onChange) {
     const editTitle = document.getElementById("edit-user-title");
     const editUsername = document.getElementById("edit-username");
     const editPassword = document.getElementById("edit-password");
+    const editColorPicker = document.getElementById("edit-color-picker");
     const editError = document.getElementById("edit-user-error");
     const saveEditBtn = document.getElementById("save-edit-user");
     const cancelEditBtn = document.getElementById("cancel-edit-user");
@@ -41,6 +43,7 @@ export function initAdminPanel(me, onChange) {
     const closeDeleteBtn = document.getElementById("close-delete-user");
 
     let userToEdit = null;
+    let editColor = null; // colour chosen in the edit modal (null = auto)
     let userToDelete = null;
     const expanded = new Set(); // account ids whose roadmap list is open
 
@@ -90,7 +93,9 @@ export function initAdminPanel(me, onChange) {
         chev.appendChild(svgIcon(ICON.chevron, 16));
         head.appendChild(chev);
 
-        head.appendChild(el("span", "avatar", (u.username || "?").charAt(0)));
+        const avatar = el("span", "avatar");
+        paintAvatar(avatar, u.username, u.color);
+        head.appendChild(avatar);
 
         const main = el("span", "person-main");
         const name = el("span", "person-name", u.username);
@@ -202,8 +207,77 @@ export function initAdminPanel(me, onChange) {
         editUsername.value = user.username;
         editPassword.value = "";
         editError.textContent = "";
+        editColor = user.color || null;
+        renderColorPicker();
         openModal(editModal);
     }
+
+    // Swatches are little avatars with the user's own initial, so the admin
+    // sees exactly what they'll get: Auto, the palette, then a custom colour.
+    function renderColorPicker() {
+        editColorPicker.innerHTML = "";
+        const name = editUsername.value.trim() || userToEdit.username;
+        const isCustom = !!editColor && !AVATAR_PALETTE.includes(editColor);
+
+        function swatch(color, label) {
+            const btn = el("button", "color-swatch" + (editColor === color ? " selected" : ""));
+            btn.type = "button";
+            btn.title = label;
+            btn.setAttribute("role", "radio");
+            btn.setAttribute("aria-checked", String(editColor === color));
+            btn.setAttribute("aria-label", label);
+            const av = el("span", "avatar");
+            paintAvatar(av, name, color);
+            btn.appendChild(av);
+            btn.addEventListener("click", () => {
+                editColor = color;
+                renderColorPicker();
+            });
+            return btn;
+        }
+
+        editColorPicker.appendChild(swatch(null, "Auto"));
+        AVATAR_PALETTE.forEach(c => editColorPicker.appendChild(swatch(c, c)));
+
+        // custom: a native colour input laid over a swatch
+        const custom = el("label", "color-swatch" + (isCustom ? " selected" : ""));
+        custom.title = "Custom color";
+        const av = el("span", "avatar");
+        if (isCustom) {
+            paintAvatar(av, name, editColor);
+        } else {
+            av.textContent = "+";
+            av.classList.add("swatch-plus");
+            av.style.background = "var(--baby-soft)";
+            av.style.color = "var(--deep)";
+        }
+        custom.appendChild(av);
+        const input = document.createElement("input");
+        input.type = "color";
+        input.value = editColor || "#1b6fb8";
+        input.setAttribute("role", "radio");
+        input.setAttribute("aria-checked", String(isCustom));
+        input.setAttribute("aria-label", "Custom color");
+        // live preview while dragging, re-render once the picker closes
+        input.addEventListener("input", () => {
+            editColor = input.value.toLowerCase();
+            av.classList.remove("swatch-plus");
+            paintAvatar(av, name, editColor);
+            editColorPicker.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
+            custom.classList.add("selected");
+        });
+        input.addEventListener("change", () => {
+            editColor = input.value.toLowerCase();
+            renderColorPicker();
+        });
+        custom.appendChild(input);
+        editColorPicker.appendChild(custom);
+    }
+
+    // swatch initials follow the username field
+    editUsername.addEventListener("input", () => {
+        if (userToEdit) renderColorPicker();
+    });
 
     saveEditBtn.addEventListener("click", async () => {
         if (!userToEdit) return;
@@ -213,6 +287,7 @@ export function initAdminPanel(me, onChange) {
         const username = editUsername.value.trim();
         if (username && username !== userToEdit.username) data.username = username;
         if (editPassword.value) data.password = editPassword.value;
+        if (editColor !== (userToEdit.color || null)) data.color = editColor;
 
         if (Object.keys(data).length === 0) {
             closeModal(editModal);
@@ -226,7 +301,8 @@ export function initAdminPanel(me, onChange) {
                 // renamed yourself: keep the top bar in step
                 me.username = updated.username;
                 document.getElementById("topbar-username").textContent = updated.username;
-                document.getElementById("user-avatar").textContent = updated.username.charAt(0);
+                me.color = updated.color;
+                paintAvatar(document.getElementById("user-avatar"), updated.username, updated.color);
             }
             userToEdit = null;
             await onChange();

@@ -123,18 +123,20 @@ router.get('/:id/members', (req, res) => {
 
   const rows = db
     .prepare(
-      `SELECT u.id, u.username, 'owner' AS role, 0 AS sort_order
+      `SELECT u.id, u.username, u.color, 'owner' AS role, 0 AS sort_order
        FROM users u JOIN roadmaps r ON r.owner_id = u.id
        WHERE r.id = @id
        UNION ALL
-       SELECT u.id, u.username, ra.role AS role, 1 AS sort_order
+       SELECT u.id, u.username, u.color, ra.role AS role, 1 AS sort_order
        FROM users u JOIN roadmap_access ra ON ra.user_id = u.id
        WHERE ra.roadmap_id = @id
        ORDER BY sort_order ASC, username ASC`
     )
     .all({ id });
 
-  res.json(rows.map(({ id: userId, username, role }) => ({ id: userId, username, role })));
+  res.json(
+    rows.map(({ id: userId, username, color, role }) => ({ id: userId, username, color: color || null, role }))
+  );
 });
 
 // PUT /api/roadmaps/:id — owner only.

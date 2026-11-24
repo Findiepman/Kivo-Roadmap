@@ -75,6 +75,10 @@ const userCols = db.prepare('PRAGMA table_info(users)').all();
 if (!userCols.some((c) => c.name === 'is_admin')) {
   db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0');
 }
+// users.color: avatar colour picked by an admin ("#rrggbb"). NULL = automatic.
+if (!userCols.some((c) => c.name === 'color')) {
+  db.exec('ALTER TABLE users ADD COLUMN color TEXT');
+}
 
 // public_token: when set, the roadmap is viewable read-only by anyone holding
 // the token (no login). NULL = not publicly shared.

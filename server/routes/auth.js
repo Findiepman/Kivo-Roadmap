@@ -41,14 +41,14 @@ router.post('/login', (req, res) => {
   const token = signToken(user);
   res.json({
     token,
-    user: { id: user.id, username: user.username, isAdmin: !!user.is_admin },
+    user: { id: user.id, username: user.username, color: user.color || null, isAdmin: !!user.is_admin },
   });
 });
 
 // GET /api/auth/me
 router.get('/me', auth, (req, res) => {
   const user = db
-    .prepare('SELECT id, username, is_admin FROM users WHERE id = ?')
+    .prepare('SELECT id, username, color, is_admin FROM users WHERE id = ?')
     .get(req.user.userId);
 
   if (!user) {
@@ -58,6 +58,7 @@ router.get('/me', auth, (req, res) => {
   res.json({
     id: user.id,
     username: user.username,
+    color: user.color || null,
     isAdmin: !!user.is_admin,
     canCreateRoadmaps: isAdmin(user.id),
   });

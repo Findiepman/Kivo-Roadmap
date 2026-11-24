@@ -3,6 +3,7 @@ import { api } from "./api.js";
 import { attachDrag, clickSuppressed } from "./drag.js";
 import { initViewToggle } from "./view-toggle.js";
 import { svgIcon, ICON } from "./icons.js";
+import { resolveAvatarColors, paintAvatar } from "./avatars.js";
 
 // "Economy, Mining" -> ["Economy", "Mining"]
 function parseTags(value) {
@@ -54,7 +55,8 @@ const confirmDeleteTaskBtn = document.getElementById("confirm-delete-task-btn");
 
 // ===== STATE =====
 let roadmap = null;      // { id, name, desc, role, groups }
-let members = [];        // [{ id, username, role }]
+let members = [];        // [{ id, username, color, role }]
+let avatarColors = new Map(); // member id -> colour (null = default)
 let editingTaskId = null; // null = the modal is creating a new task
 let modalStatus = "planned";
 let taskToDeleteId = null;
@@ -101,6 +103,7 @@ async function initRoadmapPage() {
         groups: tasksToGroups(tasks)
     };
     members = memberList || [];
+    avatarColors = resolveAvatarColors(members);
 
     applyRoleUI();
     initViewToggle();
@@ -120,6 +123,12 @@ function applyRoleUI() {
     }
 }
 
+// Current members use the roadmap-wide colours (same-letter names told apart);
+// anyone else (e.g. a past member who commented) falls back to their own colour.
+function avatarColor(user) {
+    return avatarColors.has(user.id) ? avatarColors.get(user.id) : (user.color || null);
+}
+
 function renderHeader() {
     roadmapTitle.textContent = roadmap.name;
     document.title = `${roadmap.name} - Kivo`;
@@ -129,7 +138,7 @@ function renderHeader() {
     members.slice(0, 6).forEach(m => {
         const a = document.createElement("span");
         a.className = "avatar";
-        a.textContent = (m.username || "?").charAt(0);
+        paintAvatar(a, m.username, avatarColor(m));
         a.title = m.username;
         memberStack.appendChild(a);
     });
@@ -198,7 +207,7 @@ function buildTaskRow(task) {
         task.assignees.slice(0, 4).forEach(a => {
             const av = document.createElement("span");
             av.className = "avatar";
-            av.textContent = (a.username || "?").charAt(0);
+            paintAvatar(av, a.username, avatarColor(a));
             av.title = a.username;
             stack.appendChild(av);
         });
@@ -324,7 +333,7 @@ function renderAssigneePicker(selectedIds) {
 
         const avatar = document.createElement("span");
         avatar.className = "avatar";
-        avatar.textContent = (m.username || "?").charAt(0);
+        paintAvatar(avatar, m.username, avatarColor(m));
 
         chip.appendChild(input);
         chip.appendChild(avatar);
@@ -459,7 +468,7 @@ function renderComments(comments) {
 
         const avatar = document.createElement("span");
         avatar.className = "avatar";
-        avatar.textContent = c.username ? c.username.charAt(0) : "?";
+        paintAvatar(avatar, c.username, c.userId != null ? avatarColor({ id: c.userId, color: c.color }) : null);
 
         const main = document.createElement("div");
         main.className = "comment-main";

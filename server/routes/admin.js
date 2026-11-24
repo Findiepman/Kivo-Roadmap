@@ -26,10 +26,20 @@ function validPassword(password) {
   return typeof password === 'string' && password.length >= 6;
 }
 
+// "#1B6FB8" -> "#1b6fb8". null / "" clear the colour (back to automatic).
+// Returns undefined for anything that isn't a 6-digit hex colour.
+function normalizeColor(color) {
+  if (color === null || color === '') return null;
+  if (typeof color !== 'string') return undefined;
+  const c = color.trim().toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(c) ? c : undefined;
+}
+
 function serializeUser(u) {
   return {
     id: u.id,
     username: u.username,
+    color: u.color || null,
     isAdmin: !!u.is_admin,
     createdAt: u.created_at,
   };
@@ -40,7 +50,7 @@ function serializeUser(u) {
 router.get('/users', (req, res) => {
   const rows = db
     .prepare(
-      'SELECT id, username, is_admin, created_at FROM users ORDER BY is_admin DESC, created_at ASC, id ASC'
+      'SELECT id, username, color, is_admin, created_at FROM users ORDER BY is_admin DESC, created_at ASC, id ASC'
     )
     .all();
 
@@ -85,21 +95,21 @@ router.post('/users', (req, res) => {
     .run(name, hash);
 
   const user = db
-    .prepare('SELECT id, username, is_admin, created_at FROM users WHERE id = ?')
+    .prepare('SELECT id, username, color, is_admin, created_at FROM users WHERE id = ?')
     .get(result.lastInsertRowid);
 
   res.status(201).json(serializeUser(user));
 });
 
-// PUT /api/admin/users/:id — change username and/or password of any account,
-// including the admin's own.
+// PUT /api/admin/users/:id — change username, password and/or avatar colour of
+// any account, including the admin's own.
 router.put('/users/:id', (req, res) => {
   const id = Number(req.params.id);
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const { username, password } = req.body || {};
-  if (username === undefined && password === undefined) {
+  const { username, password, color } = req.body || {};
+  if (username === undefined && password === undefined && color === undefined) {
     return res.status(400).json({ error: 'Nothing to update' });
   }
 
@@ -125,14 +135,23 @@ router.put('/users/:id', (req, res) => {
     newHash = bcrypt.hashSync(password, SALT_ROUNDS);
   }
 
-  db.prepare('UPDATE users SET username = ?, password_hash = ? WHERE id = ?').run(
+  let newColor = user.color || null;
+  if (color !== undefined) {
+    newColor = normalizeColor(color);
+    if (newColor === undefined) {
+      return res.status(400).json({ error: 'Color must look like #1b6fb8' });
+    }
+  }
+
+  db.prepare('UPDATE users SET username = ?, password_hash = ?, color = ? WHERE id = ?').run(
     newUsername,
     newHash,
+    newColor,
     id
   );
 
   const updated = db
-    .prepare('SELECT id, username, is_admin, created_at FROM users WHERE id = ?')
+    .prepare('SELECT id, username, color, is_admin, created_at FROM users WHERE id = ?')
     .get(id);
   res.json(serializeUser(updated));
 });

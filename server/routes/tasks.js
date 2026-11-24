@@ -41,7 +41,7 @@ function serializeTask(row, usersById) {
     status: row.status,
     position: row.position,
     tags,
-    assignees, // [{ id, username }]
+    assignees, // [{ id, username, color }]
     commentCount: row.comment_count || 0,
     created_at: row.created_at,
   };
@@ -61,14 +61,16 @@ function normalizeTags(tags) {
 function getMemberMap(roadmapId) {
   const rows = db
     .prepare(
-      `SELECT u.id, u.username FROM users u
+      `SELECT u.id, u.username, u.color FROM users u
        JOIN roadmaps r ON r.owner_id = u.id AND r.id = @roadmapId
        UNION
-       SELECT u.id, u.username FROM users u
+       SELECT u.id, u.username, u.color FROM users u
        JOIN roadmap_access ra ON ra.user_id = u.id AND ra.roadmap_id = @roadmapId`
     )
     .all({ roadmapId });
-  return new Map(rows.map((r) => [r.id, { id: r.id, username: r.username }]));
+  return new Map(
+    rows.map((r) => [r.id, { id: r.id, username: r.username, color: r.color || null }])
+  );
 }
 
 function normalizeAssignees(assignees, memberMap) {
@@ -230,7 +232,7 @@ function findTask(roadmapId, taskId) {
 function listComments(taskId, userId, role) {
   const rows = db
     .prepare(
-      `SELECT c.id, c.user_id, u.username, c.text, c.created_at
+      `SELECT c.id, c.user_id, u.username, u.color, c.text, c.created_at
        FROM comments c LEFT JOIN users u ON u.id = c.user_id
        WHERE c.task_id = ?
        ORDER BY c.created_at ASC, c.id ASC`
@@ -240,6 +242,7 @@ function listComments(taskId, userId, role) {
     id: c.id,
     userId: c.user_id,
     username: c.username || null, // null = the account was deleted
+    color: c.color || null,
     text: c.text,
     created_at: c.created_at,
     canDelete: role === 'owner' || (c.user_id !== null && c.user_id === userId),

@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { paintAvatar } from "./avatars.js";
 
 // ===== DOM =====
 const meAvatar = document.getElementById("me-avatar");
@@ -18,7 +19,7 @@ async function init() {
     }
     if (!me) return;
 
-    meAvatar.textContent = (me.username || "?").charAt(0);
+    paintAvatar(meAvatar, me.username, me.color);
     meUsername.textContent = me.username;
     meRole.textContent = me.isAdmin ? "Admin" : "Member";
 
