@@ -36,6 +36,7 @@ export const api = {
     request('POST', '/auth/login', { username, password }, { skipAuthRedirect: true }),
   me: () => request('GET', '/auth/me'),
   logout: () => request('POST', '/auth/logout', null, { skipAuthRedirect: true }),
+  setMyColor: (color) => request('PUT', '/auth/me/color', { color }),
 
   getRoadmaps: () => request('GET', '/roadmaps'),
   createRoadmap: (data) => request('POST', '/roadmaps', data),

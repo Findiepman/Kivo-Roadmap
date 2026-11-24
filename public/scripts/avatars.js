@@ -1,11 +1,12 @@
 // Avatar colours.
 //
-// Every avatar shows the first letter of a username. By default it uses the
-// standard baby-blue gradient from theme.css. Two things change that:
-//   1. An admin can give an account its own colour (users.color, "#rrggbb").
-//   2. On a roadmap, members whose names start with the same letter are told
-//      apart automatically: the first keeps the default, the others get a
-//      colour from AVATAR_PALETTE that nobody else with that letter is using.
+// Every avatar shows the first letter of a username, on a colour:
+//   1. The colour the user picked in Settings (or an admin set for them),
+//      stored as users.color ("#rrggbb").
+//   2. Otherwise an automatic colour from AVATAR_PALETTE, fixed per account
+//      (based on the account id) so the same person always looks the same.
+//   3. On a roadmap, members without a picked colour are spread over the
+//      palette so two members never share a colour while a free one is left.
 
 // Dark enough for the white initial to stay readable.
 export const AVATAR_PALETTE = [
@@ -25,45 +26,51 @@ export function initialOf(username) {
     return (username || "?").charAt(0);
 }
 
-// For each member the colour to draw, or null for the default gradient.
-// members: [{ id, username, color }]  ->  Map(id -> "#rrggbb" | null)
+function paletteIndex(id) {
+    const n = Math.abs(Number(id));
+    return Number.isFinite(n) ? Math.floor(n) % AVATAR_PALETTE.length : 0;
+}
+
+// The automatic colour of an account, or null when there is no account id
+// (a deleted account keeps the neutral default gradient).
+export function autoColor(id) {
+    if (id === null || id === undefined || id === "") return null;
+    return AVATAR_PALETTE[paletteIndex(id)];
+}
+
+// The colour to draw for a user outside a roadmap (top bar, settings, admin list).
+export function colorFor(user) {
+    if (!user) return null;
+    return user.color || autoColor(user.id);
+}
+
+// For each roadmap member the colour to draw.
+// members: [{ id, username, color }]  ->  Map(id -> "#rrggbb")
 export function resolveAvatarColors(members) {
     const colors = new Map();
-    const byInitial = new Map();
-
+    const unique = [];
     members.forEach(m => {
         if (colors.has(m.id)) return;
         colors.set(m.id, m.color || null);
-        const key = initialOf(m.username).toLowerCase();
-        if (!byInitial.has(key)) byInitial.set(key, []);
-        byInitial.get(key).push(m);
+        unique.push(m);
     });
 
-    byInitial.forEach(group => {
-        if (group.length < 2) return;
+    // picked colours are fixed and taken first
+    const used = new Set(unique.filter(m => m.color).map(m => m.color.toLowerCase()));
 
-        // colours already taken by someone with this letter
-        const used = new Set(group.filter(m => m.color).map(m => m.color.toLowerCase()));
-        let defaultTaken = false;
-
-        // sorted by id so the result is the same on every page load
-        [...group].sort((a, b) => a.id - b.id).forEach(m => {
-            if (m.color) return; // an admin's choice always wins
-            if (!defaultTaken) {
-                defaultTaken = true;
-                return; // keeps the default gradient
-            }
-            const start = Math.abs(Number(m.id) || 0) % AVATAR_PALETTE.length;
-            let pick = null;
-            for (let i = 0; i < AVATAR_PALETTE.length; i++) {
-                const c = AVATAR_PALETTE[(start + i) % AVATAR_PALETTE.length];
-                if (!used.has(c)) { pick = c; break; }
-            }
-            // more same-letter members than palette colours: reuse one
-            if (!pick) pick = AVATAR_PALETTE[start];
-            used.add(pick);
-            colors.set(m.id, pick);
-        });
+    // sorted by id so the result is the same on every page load
+    [...unique].sort((a, b) => a.id - b.id).forEach(m => {
+        if (m.color) return;
+        const start = paletteIndex(m.id);
+        let pick = null;
+        for (let i = 0; i < AVATAR_PALETTE.length; i++) {
+            const c = AVATAR_PALETTE[(start + i) % AVATAR_PALETTE.length];
+            if (!used.has(c)) { pick = c; break; }
+        }
+        // more members than palette colours: fall back to their own colour
+        if (!pick) pick = AVATAR_PALETTE[start];
+        used.add(pick);
+        colors.set(m.id, pick);
     });
 
     return colors;
@@ -77,7 +84,7 @@ function textColorFor(hex) {
     return lum > 0.68 ? "#12324e" : "#ffffff";
 }
 
-// Fill an avatar element: the initial, plus the colour (null = default).
+// Fill an avatar element: the initial, plus the colour (null = default gradient).
 export function paintAvatar(el, username, color) {
     el.textContent = initialOf(username);
     if (color && /^#[0-9a-f]{6}$/i.test(color)) {
@@ -87,4 +94,73 @@ export function paintAvatar(el, username, color) {
         el.style.background = "";
         el.style.color = "";
     }
+}
+
+// A row of swatches (little avatars with the user's own initial): Auto, the
+// palette, then a custom colour. Used in Settings and in the admin panel.
+//   container: element to fill
+//   opts.name():   the username to show on the swatches
+//   opts.userId:   for the Auto swatch preview
+//   opts.value:    current choice ("#rrggbb" or null = auto)
+//   opts.onChange(color): called when the choice changes (null = auto)
+export function renderColorPicker(container, opts) {
+    const value = opts.value || null;
+    const name = opts.name();
+    const isCustom = !!value && !AVATAR_PALETTE.includes(value);
+    container.innerHTML = "";
+
+    function choose(color) {
+        opts.value = color;
+        renderColorPicker(container, opts);
+        opts.onChange(color);
+    }
+
+    function swatch(color, label) {
+        const btn = document.createElement("button");
+        btn.className = "color-swatch" + (value === color ? " selected" : "");
+        btn.type = "button";
+        btn.title = label;
+        btn.setAttribute("role", "radio");
+        btn.setAttribute("aria-checked", String(value === color));
+        btn.setAttribute("aria-label", label);
+        const av = document.createElement("span");
+        av.className = "avatar";
+        paintAvatar(av, name, color === null ? autoColor(opts.userId) : color);
+        btn.appendChild(av);
+        btn.addEventListener("click", () => choose(color));
+        return btn;
+    }
+
+    container.appendChild(swatch(null, "Auto"));
+    AVATAR_PALETTE.forEach(c => container.appendChild(swatch(c, c)));
+
+    // custom: a native colour input laid over a swatch
+    const custom = document.createElement("label");
+    custom.className = "color-swatch" + (isCustom ? " selected" : "");
+    custom.title = "Custom color";
+    const av = document.createElement("span");
+    av.className = "avatar";
+    if (isCustom) {
+        paintAvatar(av, name, value);
+    } else {
+        av.textContent = "+";
+        av.classList.add("swatch-plus");
+        av.style.background = "var(--baby-soft)";
+        av.style.color = "var(--deep)";
+    }
+    custom.appendChild(av);
+    const input = document.createElement("input");
+    input.type = "color";
+    input.value = value || autoColor(opts.userId) || "#1b6fb8";
+    input.setAttribute("aria-label", "Custom color");
+    // live preview while dragging, commit once the picker closes
+    input.addEventListener("input", () => {
+        av.classList.remove("swatch-plus");
+        paintAvatar(av, name, input.value.toLowerCase());
+        container.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
+        custom.classList.add("selected");
+    });
+    input.addEventListener("change", () => choose(input.value.toLowerCase()));
+    custom.appendChild(input);
+    container.appendChild(custom);
 }

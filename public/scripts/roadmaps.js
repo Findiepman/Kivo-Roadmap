@@ -3,7 +3,7 @@ import { api } from "./api.js";
 import { attachDrag, clickSuppressed } from "./drag.js";
 import { initViewToggle } from "./view-toggle.js";
 import { svgIcon, ICON } from "./icons.js";
-import { resolveAvatarColors, paintAvatar } from "./avatars.js";
+import { resolveAvatarColors, paintAvatar, colorFor } from "./avatars.js";
 
 // "Economy, Mining" -> ["Economy", "Mining"]
 function parseTags(value) {
@@ -123,10 +123,10 @@ function applyRoleUI() {
     }
 }
 
-// Current members use the roadmap-wide colours (same-letter names told apart);
-// anyone else (e.g. a past member who commented) falls back to their own colour.
+// Current members use the roadmap-wide colours (spread so nobody shares one);
+// anyone else (e.g. a past member who commented) gets their own colour.
 function avatarColor(user) {
-    return avatarColors.has(user.id) ? avatarColors.get(user.id) : (user.color || null);
+    return avatarColors.has(user.id) ? avatarColors.get(user.id) : colorFor(user);
 }
 
 function renderHeader() {

@@ -4,7 +4,7 @@ const db = require('../db');
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../permissions');
 const { signToken } = require('./auth');
-const { LIMITS, validUsername, validPassword } = require('../validate');
+const { LIMITS, validUsername, validPassword, normalizeColor } = require('../validate');
 const rateLimits = require('../rateLimits');
 const { checkPassword, sendBusy, markPasswordFailed } = require('../passwordCheck');
 
@@ -27,15 +27,6 @@ router.use((req, res, next) => {
 
 function isUniqueClash(err) {
   return err && err.code === 'SQLITE_CONSTRAINT_UNIQUE';
-}
-
-// "#1B6FB8" -> "#1b6fb8". null / "" clear the colour (back to automatic).
-// Returns undefined for anything that isn't a 6-digit hex colour.
-function normalizeColor(color) {
-  if (color === null || color === '') return null;
-  if (typeof color !== 'string') return undefined;
-  const c = color.trim().toLowerCase();
-  return /^#[0-9a-f]{6}$/.test(c) ? c : undefined;
 }
 
 function serializeUser(u) {

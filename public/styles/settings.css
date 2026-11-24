@@ -61,6 +61,22 @@
     margin-bottom: 0.25rem;
 }
 
+.color-setting {
+    margin: 1.2rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.setting-label {
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.color-hint.error {
+    color: var(--danger, #b04a44);
+}
+
 @media (max-width: 640px) {
     .page {
         padding: 2rem 1rem 4rem;

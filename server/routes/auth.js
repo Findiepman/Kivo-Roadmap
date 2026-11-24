@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 const { isAdmin } = require('../permissions');
 const rateLimits = require('../rateLimits');
 const { checkPassword, sendBusy, markPasswordFailed } = require('../passwordCheck');
+const { normalizeColor } = require('../validate');
 
 const router = express.Router();
 
@@ -63,6 +64,19 @@ router.post('/login', rateLimits.loginPerIp, async (req, res, next) => {
 router.post('/logout', auth, (req, res) => {
   db.prepare('UPDATE users SET token_version = token_version + 1 WHERE id = ?').run(req.user.userId);
   res.json({ success: true });
+});
+
+// PUT /api/auth/me/color — every user picks their own avatar colour.
+// { color: "#rrggbb" } or { color: null } for the automatic one. Admins can
+// also change anyone's colour from the admin panel.
+router.put('/me/color', auth, (req, res) => {
+  const { color } = req.body || {};
+  const clean = normalizeColor(color);
+  if (color === undefined || clean === undefined) {
+    return res.status(400).json({ error: 'Color must look like #1b6fb8' });
+  }
+  db.prepare('UPDATE users SET color = ? WHERE id = ?').run(clean, req.user.userId);
+  res.json({ color: clean });
 });
 
 // GET /api/auth/me

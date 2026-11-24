@@ -1,6 +1,6 @@
 import { api } from "./api.js";
 import { svgIcon, ICON } from "./icons.js";
-import { AVATAR_PALETTE, paintAvatar } from "./avatars.js";
+import { paintAvatar, colorFor, renderColorPicker as renderShared } from "./avatars.js";
 
 // Accounts column of the admin dashboard: every account on the install, with
 // create / edit / delete, and per account the roadmaps it is on.
@@ -103,7 +103,7 @@ export function initAdminPanel(me, onChange) {
         head.appendChild(chev);
 
         const avatar = el("span", "avatar");
-        paintAvatar(avatar, u.username, u.color);
+        paintAvatar(avatar, u.username, colorFor(u));
         head.appendChild(avatar);
 
         const main = el("span", "person-main");
@@ -229,66 +229,14 @@ export function initAdminPanel(me, onChange) {
         openModal(editModal);
     }
 
-    // Swatches are little avatars with the user's own initial, so the admin
-    // sees exactly what they'll get: Auto, the palette, then a custom colour.
+    // same picker as on the Settings page; saved with the rest of the form
     function renderColorPicker() {
-        editColorPicker.innerHTML = "";
-        const name = editUsername.value.trim() || userToEdit.username;
-        const isCustom = !!editColor && !AVATAR_PALETTE.includes(editColor);
-
-        function swatch(color, label) {
-            const btn = el("button", "color-swatch" + (editColor === color ? " selected" : ""));
-            btn.type = "button";
-            btn.title = label;
-            btn.setAttribute("role", "radio");
-            btn.setAttribute("aria-checked", String(editColor === color));
-            btn.setAttribute("aria-label", label);
-            const av = el("span", "avatar");
-            paintAvatar(av, name, color);
-            btn.appendChild(av);
-            btn.addEventListener("click", () => {
-                editColor = color;
-                renderColorPicker();
-            });
-            return btn;
-        }
-
-        editColorPicker.appendChild(swatch(null, "Auto"));
-        AVATAR_PALETTE.forEach(c => editColorPicker.appendChild(swatch(c, c)));
-
-        // custom: a native colour input laid over a swatch
-        const custom = el("label", "color-swatch" + (isCustom ? " selected" : ""));
-        custom.title = "Custom color";
-        const av = el("span", "avatar");
-        if (isCustom) {
-            paintAvatar(av, name, editColor);
-        } else {
-            av.textContent = "+";
-            av.classList.add("swatch-plus");
-            av.style.background = "var(--baby-soft)";
-            av.style.color = "var(--deep)";
-        }
-        custom.appendChild(av);
-        const input = document.createElement("input");
-        input.type = "color";
-        input.value = editColor || "#1b6fb8";
-        input.setAttribute("role", "radio");
-        input.setAttribute("aria-checked", String(isCustom));
-        input.setAttribute("aria-label", "Custom color");
-        // live preview while dragging, re-render once the picker closes
-        input.addEventListener("input", () => {
-            editColor = input.value.toLowerCase();
-            av.classList.remove("swatch-plus");
-            paintAvatar(av, name, editColor);
-            editColorPicker.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
-            custom.classList.add("selected");
+        renderShared(editColorPicker, {
+            name: () => editUsername.value.trim() || userToEdit.username,
+            userId: userToEdit.id,
+            value: editColor,
+            onChange: (color) => { editColor = color; }
         });
-        input.addEventListener("change", () => {
-            editColor = input.value.toLowerCase();
-            renderColorPicker();
-        });
-        custom.appendChild(input);
-        editColorPicker.appendChild(custom);
     }
 
     // swatch initials follow the username field
@@ -334,7 +282,7 @@ export function initAdminPanel(me, onChange) {
                 me.username = updated.username;
                 document.getElementById("topbar-username").textContent = updated.username;
                 me.color = updated.color;
-                paintAvatar(document.getElementById("user-avatar"), updated.username, updated.color);
+                paintAvatar(document.getElementById("user-avatar"), updated.username, colorFor(updated));
             }
             userToEdit = null;
             await onChange();

@@ -3,7 +3,7 @@ import { roadmapFromApi, formatWhen } from "./storage.js";
 import { api } from "./api.js";
 import { logout } from "./logout.js";
 import { initAdminPanel } from "./admin.js";
-import { resolveAvatarColors, paintAvatar } from "./avatars.js";
+import { resolveAvatarColors, paintAvatar, colorFor } from "./avatars.js";
 
 // Dashboard page logic. Bail out if this script is loaded anywhere else.
 const listEl = document.getElementById("roadmap-list");
@@ -391,7 +391,7 @@ function initDashboard() {
 
             const avatar = document.createElement("span");
             avatar.className = "avatar";
-            paintAvatar(avatar, u.username, colors.has(u.userId) ? colors.get(u.userId) : u.color);
+            paintAvatar(avatar, u.username, colors.has(u.userId) ? colors.get(u.userId) : colorFor({ id: u.userId, color: u.color }));
 
             const name = document.createElement("span");
             name.textContent = u.username;
@@ -538,7 +538,7 @@ function initDashboard() {
         const userLabel = document.getElementById("topbar-username");
         if (userLabel) userLabel.textContent = me.username;
         const avatar = document.getElementById("user-avatar");
-        if (avatar) paintAvatar(avatar, me.username, me.color);
+        if (avatar) paintAvatar(avatar, me.username, colorFor(me));
 
         // only admins may create roadmaps; they also get the admin dashboard:
         // every roadmap on the left, every account on the right

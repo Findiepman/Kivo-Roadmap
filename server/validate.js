@@ -37,4 +37,13 @@ function tooLong(value, max, label) {
   return null;
 }
 
-module.exports = { LIMITS, validUsername, validPassword, tooLong };
+// Avatar colour: "#1B6FB8" -> "#1b6fb8". null / "" clear it (back to automatic).
+// Returns undefined for anything that isn't a 6-digit hex colour.
+function normalizeColor(color) {
+  if (color === null || color === '') return null;
+  if (typeof color !== 'string') return undefined;
+  const c = color.trim().toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(c) ? c : undefined;
+}
+
+module.exports = { LIMITS, validUsername, validPassword, tooLong, normalizeColor };
